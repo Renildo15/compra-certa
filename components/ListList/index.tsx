@@ -7,6 +7,7 @@ import { ListWithBudget } from "@/types";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useListDatabase } from "@/database/lists";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 
 interface ListListProps {
     list: ListWithBudget[];
@@ -16,6 +17,7 @@ export default function ListList({ list }: ListListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showCheckboxes, setShowCheckboxes] = useState(false);
   
+  const router = useRouter();
 
   const listDatabase = useListDatabase();
   const queryClient = useQueryClient();
@@ -34,6 +36,10 @@ export default function ListList({ list }: ListListProps) {
       setSelectedIds([]); // Limpa seleção ao esconder checkboxes
     }
   };
+
+  const handleEditRedirect = (listIds: string[]) => {
+    router.push(`/(list)/${listIds.join(',')}/edit-list`);
+  }
 
   const cleanSelection = () => {
     setSelectedIds([]);
@@ -112,7 +118,7 @@ export default function ListList({ list }: ListListProps) {
             <FontAwesome name="trash" size={20} color="#ff0000" />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => console.log('Editar selecionados')}
+            onPress={() => handleEditRedirect(selectedIds)}
             disabled={selectedIds.length === 0}
             style={{ opacity: selectedIds.length === 0 ? 0.5 : 1 }}
           >

@@ -60,9 +60,12 @@ function RootLayoutNav() {
             style={colorScheme === 'dark' ? 'light' : 'dark'}
             backgroundColor={colorScheme === 'dark' ? '#000' : '#fff'}
           />
-          <Stack>
+          <Stack
+            screenOptions={{
+              headerShown: false
+            }}
+          >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="new-list" options={{ presentation: 'modal', headerTitle: 'Nova lista' }} />
           </Stack>
         </SQLiteProvider>
       </ThemeProvider>

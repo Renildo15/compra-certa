@@ -3,7 +3,6 @@ import { Text, View } from '@/components/Themed';
 import { useListDatabase } from '@/database/lists';
 import ListList from '@/components/ListList';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
 
 export default function HomeScreen() {
   const listDatabase = useListDatabase();
