@@ -15,4 +15,4 @@
 
 - React Native (Expo)
 - SQLite
-- TypeScript (se estiver usando)
+- TypeScript
