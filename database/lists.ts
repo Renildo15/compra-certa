@@ -75,12 +75,35 @@ export function useListDatabase() {
         
     }
 
-    async function getList (id:string): Promise<DatabaseSchema['lists'] | null> {
+    async function getList(id: string): Promise<ListWithBudget | null> {
         try {
-            const query = "SELECT * FROM lists WHERE id = ?;";
-            const response = await database.getFirstAsync<DatabaseSchema['lists']>(query, [id]);
-            return response || null;
+            const query = `
+                SELECT 
+                    lists.*,
+                    budgets.id as "budget.id",
+                    budgets.listId as "budget.listId", 
+                    budgets.value as "budget.value"
+                FROM lists
+                LEFT JOIN budgets ON lists.id = budgets.listId
+                WHERE lists.id = ?
+                ORDER BY lists.created_at DESC
+                LIMIT 1;
+            `;
+
+            const result = await database.getFirstAsync<any>(query, [id]);
+
+            if (!result) return null;
+
+            return {
+                ...result,
+                budget: result["budget.id"] ? {
+                    id: result["budget.id"],
+                    listId: result["budget.listId"],
+                    value: result["budget.value"]
+                } : undefined
+            };
         } catch (error) {
+            console.error("Error fetching list:", error);
             throw error;
         }
     }
@@ -105,7 +128,7 @@ export function useListDatabase() {
         }
     }
 
-     async function update(data: DatabaseSchema['lists']) {
+    async function update(data: DatabaseSchema['lists']) {
         const statement = await database.prepareAsync(
         "UPDATE lists SET name = $name, type = $type, ref_month = $ref_month WHERE id = $id;"
         )
@@ -125,6 +148,68 @@ export function useListDatabase() {
         }
     }
 
+    async function updateMultipleLists(updates: Array<{list: DatabaseSchema['lists'], budget?: {id: string, value: number}}>) {
+        try {
+            console.log('Updating lists:', updates);
+            await database.withTransactionAsync(async () => {
+                const listStatement = await database.prepareAsync(
+                    `UPDATE lists SET 
+                    name = $name, 
+                    type = $type, 
+                    ref_month = $ref_month 
+                    WHERE id = $id`
+                );
+                
+                for (const { list } of updates) {
+                    await listStatement.executeAsync({
+                        $id: list.id,
+                        $name: list.name,
+                        $type: list.type,
+                        $ref_month: list.ref_month || null
+                    })
+                }
+
+                await listStatement.finalizeAsync();
+
+                const upsertBudgetStatement = await database.prepareAsync(
+                    `INSERT OR REPLACE INTO budgets 
+                    (id, listId, value) 
+                    VALUES (
+                        COALESCE((SELECT id FROM budgets WHERE listId = $listId), $id),
+                        $listId, 
+                        $value
+                    )`
+                );
+
+                const deleteBudgetStatement = await database.prepareAsync(
+                    `DELETE FROM budgets WHERE listId = $listId`
+                );
+
+                for (const { list, budget } of updates) {
+                    if (budget) {
+                        await upsertBudgetStatement.executeAsync({
+                            $id: budget.id,
+                            $listId: list.id,
+                            $value: budget.value
+                        });
+                    } else {
+                        await deleteBudgetStatement.executeAsync({
+                            $listId: list.id
+                        });
+                    }
+                }
+
+                await upsertBudgetStatement.finalizeAsync();
+                await deleteBudgetStatement.finalizeAsync();
+            });
+
+            console.log('Lists updated successfully');
+        } catch (error) {
+            console.error('Database error:', error)
+            throw error;
+        }
+    }
+
     return {
         create,
         getAll,
@@ -132,6 +217,7 @@ export function useListDatabase() {
         remove,
         update,
         getListsWithBudgets,
-        removeAll
+        removeAll,
+        updateMultipleLists
     }
 }
