@@ -24,7 +24,7 @@ export default function List() {
             ) : (
                 <>
                     <ListHeader listData={listData}/>
-                    <ItemsList/>
+                    <ItemsList listType={listData?.type ?? 'mercado'}/>
                 </>
             )}
         </ScrollView>

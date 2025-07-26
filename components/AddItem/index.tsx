@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, TextInput, Portal, Modal, useTheme } from 'react-native-paper';
+import { Button, Portal, Modal, useTheme } from 'react-native-paper';
 import Input from '../Input';
 
-export default function AddItemForm() {
+interface AddItemFormProps {
+    listType: "mercado" | "pedido";
+}
+
+export default function AddItemForm({ listType = "mercado" }: AddItemFormProps) {
     const [visible, setVisible] = useState(false);
     const [itemName, setItemName] = useState('');
     const [itemQuantity, setItemQuantity] = useState('');
@@ -66,31 +70,35 @@ export default function AddItemForm() {
                         keyboardType='numeric'
                         placeholder="Ex: 1"
                     />
+                    { listType === "mercado" && (
+                        <>
+                            <Input
+                                label="Preço"
+                                value={itemPrice}
+                                onChangeText={setItemPrice}
+                                style={styles.input}
+                                placeholder="Ex: 8.50"
+                                keyboardType="numeric"
+                            />
 
-                    <Input
-                        label="Preço"
-                        value={itemPrice}
-                        onChangeText={setItemPrice}
-                        style={styles.input}
-                        placeholder="Ex: 8.50"
-                        keyboardType="numeric"
-                    />
+                            <Input
+                                label="Categoria"
+                                value={itemCategory}
+                                onChangeText={setItemCategory}
+                                style={styles.input}
+                                placeholder="Ex: Grãos"
+                            />
 
-                    <Input
-                        label="Categoria"
-                        value={itemCategory}
-                        onChangeText={setItemCategory}
-                        style={styles.input}
-                        placeholder="Ex: Grãos"
-                    />
-
-                    <Input
-                        label="Observação"
-                        value={itemObservation}
-                        onChangeText={setItemObservation}
-                        style={styles.input}
-                        placeholder="Ex: Preferência por orgânico"
-                    />
+                            <Input
+                                label="Observação"
+                                value={itemObservation}
+                                onChangeText={setItemObservation}
+                                style={styles.input}
+                                placeholder="Ex: Preferência por orgânico"
+                            />
+                        </>
+                    )}
+                    
 
                     <View style={styles.buttonRow}>
                         <Button 

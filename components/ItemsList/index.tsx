@@ -6,7 +6,11 @@ import { Item } from "@/types/items";
 import ItemHeader from "../ItemHeader";
 import AddItemForm from "../AddItem";
 
-export default function ItemsList() {
+interface ItemsListProps {
+    listType: "mercado" | "pedido";
+}
+
+export default function ItemsList({ listType = "mercado" }: ItemsListProps) {
     const mockItems: Item[] = [
         { id: '1', name: 'Arroz', quantity: '1kg', price: 8.50, purchased: false, listId: '1', created_at: new Date().toISOString(), category: 'Grains', observation: '' },
         { id: '2', name: 'Feijão', quantity: '1kg', price: 9.20, purchased: true, listId: '1', created_at: new Date().toISOString(), category: 'Grains', observation: '' },
@@ -38,7 +42,7 @@ export default function ItemsList() {
                 />
             ))}
 
-            <AddItemForm/>
+            <AddItemForm listType={listType}/>
         </View>
     )
 }
