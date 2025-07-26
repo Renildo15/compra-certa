@@ -1,9 +1,9 @@
 import { ListWithBudget } from '@/types';
 import { View, Text, StyleSheet, TouchableOpacity, Share, Alert } from 'react-native';
 import Checkbox from 'expo-checkbox';
-import { useState } from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Item } from '@/types/items';
+import { Link } from 'expo-router';
 
 interface CardListProps {
   list: ListWithBudget;
@@ -77,11 +77,17 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
               color={isChecked ? '#4caf50' : undefined} // Cor verde quando selecion
             />
           ) : (
-            <TouchableOpacity
-              onPress={shareList}
-            >
-              <FontAwesome name="share" size={20} color="#28a745" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '20%' }}>
+              <Link href={`/(list)/${list.id}/list`}>
+                <FontAwesome name="eye" size={20} color="#007BFF" />
+              </Link>
+              <TouchableOpacity
+                onPress={shareList}
+              >
+                <FontAwesome name="share" size={20} color="#28a745" />
+              </TouchableOpacity>
+              
+            </View>
           )}
         </View>
         <Text style={styles.title}>
