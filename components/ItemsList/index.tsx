@@ -4,6 +4,7 @@ import { StyleSheet } from "react-native";
 import CardItem from "../CardItem";
 import { Item } from "@/types/items";
 import ItemHeader from "../ItemHeader";
+import AddItemForm from "../AddItem";
 
 export default function ItemsList() {
     const mockItems: Item[] = [
@@ -36,6 +37,8 @@ export default function ItemsList() {
                     toggleItemChecked={toggleItemChecked} 
                 />
             ))}
+
+            <AddItemForm/>
         </View>
     )
 }
