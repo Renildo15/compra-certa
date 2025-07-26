@@ -17,7 +17,7 @@ export default function ItemsList() {
     const toggleItemChecked = (itemId: string) => {
         setItems(prevItems => 
             prevItems.map(item => 
-                item.id === itemId ? { ...item, checked: !item.purchased } : item
+                item.id === itemId ? { ...item, purchased: !item.purchased } : item
             )
         );
     };
