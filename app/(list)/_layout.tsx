@@ -23,6 +23,15 @@ export default function ListRootLayout() {
           headerBackTitle: "Fechar" // Texto para o botão de voltar
         }}
       />
+      {/* Tela de visualização de lista */}
+      <Stack.Screen
+        name="[listId]/list"
+        options={{
+          headerShown: true,
+          title: "Lista",
+          headerBackTitle: "Voltar"
+        }}
+      />
     </Stack>
   );
 }
