@@ -6,6 +6,6 @@ export type Item = {
     price?: number;
     category?: string;
     observation?: string;
-    purchased: boolean;
+    purchased?: boolean;
     created_at: string;
 };

@@ -32,7 +32,22 @@ export function useItemDatabase() {
         }
     }
 
+    async function getItems(listId: string): Promise<DatabaseSchema['itens'][]> {
+        try {
+            const query = `
+                SELECT * FROM itens
+                WHERE listId = ?
+                ORDER BY created_at DESC;
+            `;
+            const response = await database.getAllAsync<DatabaseSchema['itens']>(query, [listId]);
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     return {
         create,
+        getItems,
     }
 }
