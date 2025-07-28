@@ -1,35 +1,83 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
+import uuid from 'react-native-uuid';
 import { Button, Portal, Modal, useTheme } from 'react-native-paper';
 import Input from '../Input';
+import { useItemDatabase } from '@/database/items';
+import { Text } from '../Themed';
 
 interface AddItemFormProps {
     listType: "mercado" | "pedido";
+    listId: string; // Assuming you need a listId to associate the item with a list
+    onItemAdded?: () => void;
+
 }
 
-export default function AddItemForm({ listType = "mercado" }: AddItemFormProps) {
+export default function AddItemForm({ listType = "mercado", listId, onItemAdded }: AddItemFormProps) {
     const [visible, setVisible] = useState(false);
     const [itemName, setItemName] = useState('');
     const [itemQuantity, setItemQuantity] = useState('');
     const [itemPrice, setItemPrice] = useState('');
     const [itemCategory, setItemCategory] = useState('');
     const [itemObservation, setItemObservation] = useState('');
-    const [itemListId, setItemListId] = useState(''); // Assuming you have a list ID to associate with the item
     const theme = useTheme();
+
+
+    const itemDatabase = useItemDatabase();
+    const [isLoading, setIsLoading] = useState(false);
+
+    const [error, setError] = useState<string | null>(null);
 
     const showModal = () => setVisible(true);
     const hideModal = () => setVisible(false);
 
-    const handleAddItem = () => {
-        // Aqui você adicionaria o item à sua lista
-        console.log('Adicionando item:', itemName);
-        hideModal();
-        setItemName('');
-        setItemQuantity('');
-        setItemPrice('');
-        setItemCategory('');
-        setItemObservation('');
-        setItemListId(''); // Reset the list ID if necessary
+    const handleAddItem = async () => {
+        setIsLoading(true);
+        setError(null);
+        if (!itemName.trim()) {
+            Alert.alert('Erro', 'O nome do item é obrigatório.');
+            setIsLoading(false);
+            return;
+        }
+
+        if (!itemQuantity.trim() || isNaN(Number(itemQuantity))) {
+            Alert.alert('Erro', 'A quantidade deve ser um número válido.');
+            setIsLoading(false);
+            return;
+        }
+
+        const id = String(uuid.v4());
+        const createdAt = new Date().toISOString();
+
+        try {
+            await itemDatabase.create({
+                id,
+                name: itemName.trim(),
+                quantity: itemQuantity.trim(),
+                price: listType === "mercado" ? parseFloat(itemPrice.trim() || '0') : 0,
+                category: listType === "mercado" ? itemCategory.trim() : '',
+                observation: listType === "mercado" ? itemObservation.trim() : '',
+                listId,
+                created_at: createdAt,
+            })
+
+            Alert.alert('Sucesso', 'Item adicionado com sucesso!');
+            setItemName('');
+            setItemQuantity('');
+            setItemPrice('');
+            setItemCategory('');
+            setItemObservation('');
+            hideModal();
+           if (onItemAdded) {
+                await onItemAdded();
+            }
+        } catch (error) {
+            console.error('Erro ao adicionar item:', error);
+            setError('Falha ao adicionar item. Tente novamente.');
+            Alert.alert('Erro', 'Falha ao adicionar item. Tente novamente.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -96,6 +144,7 @@ export default function AddItemForm({ listType = "mercado" }: AddItemFormProps) 
                                 style={styles.input}
                                 placeholder="Ex: Preferência por orgânico"
                             />
+                            {error && <Text style={{ color: 'red', marginTop: 10 }}>{error}</Text>}
                         </>
                     )}
                     
@@ -116,7 +165,7 @@ export default function AddItemForm({ listType = "mercado" }: AddItemFormProps) 
                             style={[styles.button, { backgroundColor: "#4CAF50", opacity: itemName.trim() ? 1 : 0.5 }]}
                             disabled={!itemName.trim()}
                         >
-                            Adicionar
+                            {isLoading ? 'Adicionando...' : 'Adicionar Item'}
                         </Button>
                     </View>
                     </View>

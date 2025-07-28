@@ -1,30 +1,33 @@
-import { useState } from "react";
-import { View } from "../Themed";
-import { StyleSheet } from "react-native";
+import { Text, View } from "../Themed";
+import { FlatList, StyleSheet } from "react-native";
 import CardItem from "../CardItem";
 import { Item } from "@/types/items";
 import ItemHeader from "../ItemHeader";
 import AddItemForm from "../AddItem";
+import { useItemDatabase } from "@/database/items";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ListWithBudget } from "@/types";
 
 interface ItemsListProps {
-    listType: "mercado" | "pedido";
+   listData: ListWithBudget | undefined;
 }
 
-export default function ItemsList({ listType = "mercado" }: ItemsListProps) {
-    const mockItems: Item[] = [
-        { id: '1', name: 'Arroz', quantity: '1kg', price: 8.50, purchased: false, listId: '1', created_at: new Date().toISOString(), category: 'Grains', observation: '' },
-        { id: '2', name: 'Feijão', quantity: '1kg', price: 9.20, purchased: true, listId: '1', created_at: new Date().toISOString(), category: 'Grains', observation: '' },
-        { id: '3', name: 'Óleo', quantity: '900ml', price: 7.80, purchased: false, listId: '1', created_at: new Date().toISOString(), category: 'Grains', observation: '' },
-    ];
+export default function ItemsList({ listData }: ItemsListProps) {
 
-    const [items, setItems] = useState<Item[]>(mockItems);
+    const itemDatabase = useItemDatabase();
+    const queryClient = useQueryClient();
+    const { data: itemData, isLoading: isItemLoading } = useQuery({
+        queryKey: ['itemsList', listData?.id, 'items'],
+        queryFn: () => itemDatabase.getItems(listData?.id as string),
+        enabled: !!listData?.id,
+    });
+
 
     const toggleItemChecked = (itemId: string) => {
-        setItems(prevItems => 
-            prevItems.map(item => 
-                item.id === itemId ? { ...item, purchased: !item.purchased } : item
-            )
-        );
+        // Here you would typically update the item's checked status in the database
+        // For example:
+        // itemDatabase.updateItemChecked(itemId, !itemData.find(item => item.id === itemId)?.purchased);
+        console.log(`Toggling item with ID: ${itemId}`);
     };
 
     const handleAddItem = () => {
@@ -34,15 +37,39 @@ export default function ItemsList({ listType = "mercado" }: ItemsListProps) {
     return (
         <View style={styles.itemsContainer}>
             <ItemHeader handleAddItem={handleAddItem} />
-            {items.map(item => (
-                <CardItem 
-                    key={item.id} 
-                    item={item} 
-                    toggleItemChecked={toggleItemChecked} 
-                />
-            ))}
+            <FlatList
+                data={itemData}
+                keyExtractor={(item: Item) => item.id}
+                renderItem={({ item }) => (
+                    <CardItem 
+                        key={item.id} 
+                        item={item} 
+                        toggleItemChecked={toggleItemChecked} 
+                    />
+                )}
+                ListEmptyComponent={
+                    <View style={{ padding: 20 }}>
+                        <Text style={{ textAlign: 'center', color: '#888' }}>
+                            Nenhum item encontrado. Adicione um novo item.
+                        </Text>
+                    </View>
+                }
+                contentContainerStyle={{ paddingBottom: 20 }}
+                refreshing={isItemLoading}
+                onRefresh={async () => {
+                    await queryClient.invalidateQueries({ 
+                        queryKey: ['itemsList', listData?.id, 'items'] // Use a mesma queryKey da sua query
+                    });
+                }}
+            />
 
-            <AddItemForm listType={listType}/>
+            <AddItemForm 
+                listType={listData?.type ?? 'mercado'} 
+                listId={listData?.id ?? ''}
+                onItemAdded={async () => {
+                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                }}
+            />
         </View>
     )
 }

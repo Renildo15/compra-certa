@@ -35,7 +35,7 @@ export default function NewListScreen() {
       setIsLoading(false);
       return;
     }
-   const id = String(uuid.v4());
+    const id = String(uuid.v4());
     const createdAt = new Date().toISOString();
     const refMonth = type === 'mercado' ? month : '';
 

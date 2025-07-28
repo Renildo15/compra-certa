@@ -1,5 +1,5 @@
 import { StyleSheet, ScrollView } from 'react-native';
-import { Text } from "@/components/Themed";
+import { Text, View } from "@/components/Themed";
 import { useListDatabase } from "@/database/lists";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
@@ -18,16 +18,16 @@ export default function List() {
 
 
     return (
-        <ScrollView style={styles.container}>
+        <View style={styles.container}>
             {isListLoading ? (
                 <Text style={styles.loadingText}>Carregando lista...</Text>
             ) : (
                 <>
                     <ListHeader listData={listData}/>
-                    <ItemsList listType={listData?.type ?? 'mercado'}/>
+                    <ItemsList listData={listData ?? undefined}/>
                 </>
             )}
-        </ScrollView>
+        </View>
     );
 }
 
