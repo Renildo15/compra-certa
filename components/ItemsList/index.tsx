@@ -23,11 +23,13 @@ export default function ItemsList({ listData }: ItemsListProps) {
     });
 
 
-    const toggleItemChecked = (itemId: string) => {
+    const toggleItemChecked = async (itemId: string) => {
         // Here you would typically update the item's checked status in the database
         // For example:
-        // itemDatabase.updateItemChecked(itemId, !itemData.find(item => item.id === itemId)?.purchased);
-        console.log(`Toggling item with ID: ${itemId}`);
+        await itemDatabase.updateItemChecked(itemId, !itemData?.find(item => item.id === itemId)?.purchased);
+        await queryClient.invalidateQueries({ 
+            queryKey: ['itemsList', listData?.id, 'items'] // Use a mesma queryKey da sua query
+        });
     };
 
     const handleAddItem = () => {

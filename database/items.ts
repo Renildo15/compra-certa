@@ -46,8 +46,25 @@ export function useItemDatabase() {
         }
     }
 
+    async function updateItemChecked(itemId: string, checked: boolean) {
+        const statement = await database.prepareAsync(
+            "UPDATE itens SET purchased = $purchased WHERE id = $id;"
+        );
+        try {
+            await statement.executeAsync({
+                $id: itemId,
+                $purchased: checked ? 1 : 0, // Assuming purchased is a boolean stored as an integer
+            });
+        } catch (error) {
+            throw error;
+        } finally {
+            await statement.finalizeAsync();
+        }
+    }
+
     return {
         create,
         getItems,
+        updateItemChecked,
     }
 }
