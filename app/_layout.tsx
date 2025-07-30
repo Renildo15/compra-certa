@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { createSchema } from '@/database/schema';
+import { BudgetProvider } from '@/context/budgetContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -54,24 +55,26 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const queryClient = new QueryClient();
   return (
-    <PaperProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <SQLiteProvider databaseName='compracerta.db' onInit={createSchema}>
-            <StatusBar
-              style={colorScheme === 'dark' ? 'light' : 'dark'}
-              backgroundColor={colorScheme === 'dark' ? '#000' : '#fff'}
-            />
-            <Stack
-              screenOptions={{
-                headerShown: false
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
-          </SQLiteProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </PaperProvider>
+    <BudgetProvider>
+      <PaperProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <SQLiteProvider databaseName='compracerta.db' onInit={createSchema}>
+              <StatusBar
+                style={colorScheme === 'dark' ? 'light' : 'dark'}
+                backgroundColor={colorScheme === 'dark' ? '#000' : '#fff'}
+              />
+              <Stack
+                screenOptions={{
+                  headerShown: false
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              </Stack>
+            </SQLiteProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </PaperProvider>
+    </BudgetProvider>
   );
 }
