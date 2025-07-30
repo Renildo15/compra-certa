@@ -32,30 +32,44 @@ export default function ItemsList({ listData }: ItemsListProps) {
 
 
 
-    const toggleItemChecked = async (itemId: string) => {
-     
+   const toggleItemChecked = async (itemId: string) => {
+    try {
         const item = itemData?.find(item => item.id === itemId);
         if (!item) return;
 
-        const isCurrentlyChecked = item.purchased;
+        // Obter o valor MAIS RECENTE do orçamento diretamente do banco
+        const currentListData = await listDatabase.getList(listData?.id as string);
+        const currentBudgetValue = currentListData?.budget?.value ?? 0;
+        
         const price = Number(item.price) || 0;
         const quantity = Number(item.quantity) || 1;
+        const itemTotalValue = price * quantity;
 
-        const delta = (!isNaN(price) && !isNaN(quantity)) ? price * quantity : 0;
+        // Determinar a nova operação baseada no estado ATUAL do item
+        const newPurchasedStatus = !item.purchased;
+        const budgetAdjustment = newPurchasedStatus ? -itemTotalValue : itemTotalValue;
+        const newBudgetValue = currentBudgetValue + budgetAdjustment;
 
-        await itemDatabase.updateItemChecked(itemId, !itemData?.find(item => item.id === itemId)?.purchased);
+        // Executar todas as atualizações de forma atômica
+        await Promise.all([
+            itemDatabase.updateItemChecked(itemId, newPurchasedStatus),
+            listDatabase.updateListBudget(
+                currentListData?.budget?.id as string, 
+                listData?.id as string, 
+                newBudgetValue
+            ),
+        ]);
 
-        const currentBudget = listBudgetData?.budget?.value ?? 0;
-        const newBudgetValue = isCurrentlyChecked ? currentBudget + delta : currentBudget - delta;
-
-        await listDatabase.updateListBudget(listBudgetData?.budget?.id as string, listData?.id as string, newBudgetValue);
-        await queryClient.invalidateQueries({ 
-            queryKey: ['itemsList', listData?.id, 'items'] // Use a mesma queryKey da sua query
-        });
-        await queryClient.invalidateQueries({ 
-            queryKey: ['listBudget', listData?.id] // Invalidate the budget query
-        });
-    };
+        // Atualizar as queries
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] }),
+            queryClient.invalidateQueries({ queryKey: ['listdetails', listData?.id] }),
+        ]);
+        
+    } catch (error) {
+        console.error("Error toggling item checked status:", error);
+    }
+};
 
     const handleAddItem = () => {
         // router.push(`/(list)/${listId}/new-item`);
@@ -63,7 +77,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
 
     return (
         <View style={styles.itemsContainer}>
-            <ItemHeader handleAddItem={handleAddItem} />
+            <ItemHeader/>
             <FlatList
                 data={itemData}
                 keyExtractor={(item: Item) => item.id}
@@ -87,6 +101,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
                     await queryClient.invalidateQueries({ 
                         queryKey: ['itemsList', listData?.id, 'items'] // Use a mesma queryKey da sua query
                     });
+
                 }}
             />
 

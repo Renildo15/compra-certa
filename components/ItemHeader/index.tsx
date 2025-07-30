@@ -1,12 +1,7 @@
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet } from "react-native";
 import { Text, View } from "../Themed";
-import { FontAwesome } from "@expo/vector-icons";
 
-interface ItemHeaderProps {
-    handleAddItem: () => void;
-}
-
-export default function ItemHeader({ handleAddItem }: ItemHeaderProps) {
+export default function ItemHeader() {
     return (
         <View style={styles.itemsHeader}>
             <Text style={styles.itemsTitle}>Itens da Lista</Text>
