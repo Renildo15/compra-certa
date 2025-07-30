@@ -108,6 +108,26 @@ export function useListDatabase() {
         }
     }
 
+    async function updateListBudget(budgetId: string, listId: string, budgetValue: number) {
+        try {
+            const statement = await database.prepareAsync(
+                `INSERT OR REPLACE INTO budgets (id, listId, value) 
+                VALUES ($id, $listId, $value);`
+            );
+
+            await statement.executeAsync({
+                $id: budgetId,
+                $listId: listId,
+                $value: budgetValue
+            });
+
+            await statement.finalizeAsync();
+            console.log("List budget updated successfully");
+        } catch (error) {
+            console.error("Error updating list budget:", error);
+            throw error;
+        }
+    }
     async function remove(id: string) {
         try {
             await database.execAsync("DELETE FROM lists WHERE id = " + id)
@@ -218,6 +238,7 @@ export function useListDatabase() {
         update,
         getListsWithBudgets,
         removeAll,
-        updateMultipleLists
+        updateMultipleLists,
+        updateListBudget
     }
 }

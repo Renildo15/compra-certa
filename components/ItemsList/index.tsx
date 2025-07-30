@@ -7,6 +7,7 @@ import AddItemForm from "../AddItem";
 import { useItemDatabase } from "@/database/items";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListWithBudget } from "@/types";
+import { useListDatabase } from "@/database/lists";
 
 interface ItemsListProps {
    listData: ListWithBudget | undefined;
@@ -15,6 +16,7 @@ interface ItemsListProps {
 export default function ItemsList({ listData }: ItemsListProps) {
 
     const itemDatabase = useItemDatabase();
+    const listDatabase = useListDatabase();
     const queryClient = useQueryClient();
     const { data: itemData, isLoading: isItemLoading } = useQuery({
         queryKey: ['itemsList', listData?.id, 'items'],
@@ -22,13 +24,36 @@ export default function ItemsList({ listData }: ItemsListProps) {
         enabled: !!listData?.id,
     });
 
+    const { data: listBudgetData } = useQuery({
+        queryKey: ['listBudget', listData?.id],
+        queryFn: () => listDatabase.getList(listData?.id as string),
+        enabled: !!listData?.id,
+    });
+
+
 
     const toggleItemChecked = async (itemId: string) => {
-        // Here you would typically update the item's checked status in the database
-        // For example:
+     
+        const item = itemData?.find(item => item.id === itemId);
+        if (!item) return;
+
+        const isCurrentlyChecked = item.purchased;
+        const price = Number(item.price) || 0;
+        const quantity = Number(item.quantity) || 1;
+
+        const delta = (!isNaN(price) && !isNaN(quantity)) ? price * quantity : 0;
+
         await itemDatabase.updateItemChecked(itemId, !itemData?.find(item => item.id === itemId)?.purchased);
+
+        const currentBudget = listBudgetData?.budget?.value ?? 0;
+        const newBudgetValue = isCurrentlyChecked ? currentBudget + delta : currentBudget - delta;
+
+        await listDatabase.updateListBudget(listBudgetData?.budget?.id as string, listData?.id as string, newBudgetValue);
         await queryClient.invalidateQueries({ 
             queryKey: ['itemsList', listData?.id, 'items'] // Use a mesma queryKey da sua query
+        });
+        await queryClient.invalidateQueries({ 
+            queryKey: ['listBudget', listData?.id] // Invalidate the budget query
         });
     };
 
