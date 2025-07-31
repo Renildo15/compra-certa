@@ -8,6 +8,9 @@ import { useItemDatabase } from "@/database/items";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListWithBudget } from "@/types";
 import { useListDatabase } from "@/database/lists";
+import { useBudget } from "@/hooks/useBudget";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from "react";
 
 interface ItemsListProps {
    listData: ListWithBudget | undefined;
@@ -24,57 +27,84 @@ export default function ItemsList({ listData }: ItemsListProps) {
         enabled: !!listData?.id,
     });
 
-    const { data: listBudgetData } = useQuery({
-        queryKey: ['listBudget', listData?.id],
-        queryFn: () => listDatabase.getList(listData?.id as string),
-        enabled: !!listData?.id,
-    });
-
-
-
-   const toggleItemChecked = async (itemId: string) => {
-    try {
-        const item = itemData?.find(item => item.id === itemId);
-        if (!item) return;
-
-        // Obter o valor MAIS RECENTE do orçamento diretamente do banco
-        const currentListData = await listDatabase.getList(listData?.id as string);
-        const currentBudgetValue = currentListData?.budget?.value ?? 0;
-        
-        const price = Number(item.price) || 0;
-        const quantity = Number(item.quantity) || 1;
-        const itemTotalValue = price * quantity;
-
-        // Determinar a nova operação baseada no estado ATUAL do item
-        const newPurchasedStatus = !item.purchased;
-        const budgetAdjustment = newPurchasedStatus ? -itemTotalValue : itemTotalValue;
-        const newBudgetValue = currentBudgetValue + budgetAdjustment;
-
-        // Executar todas as atualizações de forma atômica
-        await Promise.all([
-            itemDatabase.updateItemChecked(itemId, newPurchasedStatus),
-            listDatabase.updateListBudget(
-                currentListData?.budget?.id as string, 
-                listData?.id as string, 
-                newBudgetValue
-            ),
-        ]);
-
-        // Atualizar as queries
-        await Promise.all([
-            queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] }),
-            queryClient.invalidateQueries({ queryKey: ['listdetails', listData?.id] }),
-        ]);
-        
-    } catch (error) {
-        console.error("Error toggling item checked status:", error);
+    const storeExpanseValue = async (value: number) => {
+        try {
+            await AsyncStorage.setItem(`expenseValue`, value.toString());
+        } catch (error) {
+            console.error("Error storing expense value:", error);
+        }
     }
-};
 
-    const handleAddItem = () => {
-        // router.push(`/(list)/${listId}/new-item`);
+    const retrieveExpenseValue = async () => {
+        try {
+            const value = await AsyncStorage.getItem(`expenseValue`);
+            return value ? parseFloat(value) : 0;
+        } catch (error) {
+            console.error("Error retrieving expense value:", error);
+            return 0;
+        }
+    }
+
+    const {setExpenseValue, expenseValue} = useBudget();
+
+    useEffect(() => {
+        const fetchAndSetExpenseValue = async () => {
+            const storedValue = await retrieveExpenseValue();
+            setExpenseValue(storedValue);
+
+        };
+
+        fetchAndSetExpenseValue();
+        
+    })
+
+    const toggleItemChecked = async (itemId: string) => {
+        try {
+            const item = itemData?.find(item => item.id === itemId);
+            if (!item) return;
+
+            // Obter o valor MAIS RECENTE do orçamento diretamente do banco
+            const currentListData = await listDatabase.getList(listData?.id as string);
+            const currentBudgetValue = currentListData?.budget?.value ?? 0;
+            
+            const price = Number(item.price) || 0;
+            const quantity = Number(item.quantity) || 1;
+            const itemTotalValue = price * quantity;
+
+            // Atualizar os valores de despesas e restante
+            if (!item.purchased) {
+                setExpenseValue(expenseValue + itemTotalValue);
+                await storeExpanseValue(expenseValue + itemTotalValue);
+
+            } else {
+                setExpenseValue(expenseValue - itemTotalValue);
+                await storeExpanseValue(expenseValue - itemTotalValue);
+            }
+            // Determinar a nova operação baseada no estado ATUAL do item
+            const newPurchasedStatus = !item.purchased;
+            const budgetAdjustment = newPurchasedStatus ? -itemTotalValue : itemTotalValue;
+            const newBudgetValue = currentBudgetValue + budgetAdjustment;
+
+            // Executar todas as atualizações de forma atômica
+            await Promise.all([
+                itemDatabase.updateItemChecked(itemId, newPurchasedStatus),
+                listDatabase.updateListBudget(
+                    currentListData?.budget?.id as string, 
+                    listData?.id as string, 
+                    newBudgetValue
+                ),
+            ]);
+
+            // Atualizar as queries
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] }),
+                queryClient.invalidateQueries({ queryKey: ['listdetails', listData?.id] }),
+            ]);
+            
+        } catch (error) {
+            console.error("Error toggling item checked status:", error);
+        }
     };
-
     return (
         <View style={styles.itemsContainer}>
             <ItemHeader/>

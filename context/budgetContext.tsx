@@ -8,14 +8,7 @@ type BudgetContextType = {
 };
 
 
-export const BudgetContext = React.createContext<BudgetContextType | undefined>(
-    {
-        expenseValue: 0,
-        setExpenseValue: () => {},
-        restValue: 0,
-        setRestValue: () => {},
-    }
-);
+export const BudgetContext = React.createContext<BudgetContextType | undefined>(undefined);
 
 
 export const BudgetProvider = ({ children }: { children: React.ReactNode }) => {

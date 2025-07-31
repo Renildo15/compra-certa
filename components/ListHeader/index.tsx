@@ -8,7 +8,7 @@ interface ListHeaderProps {
 }
 
 export default function ListHeader( { listData }:ListHeaderProps) {
-    const {expenseValue, restValue} = useBudget();
+    const {expenseValue} = useBudget();
     return (
         <View style={styles.header}>
             <Text style={styles.listName}>{listData?.name || 'Lista não encontrada'}</Text>
@@ -33,14 +33,6 @@ export default function ListHeader( { listData }:ListHeaderProps) {
                     Despesas: {expenseValue.toLocaleString('pt-BR', { 
                         style: 'currency', 
                         currency: 'BRL' 
-                    })}
-                </Text>
-            </View>
-            <View style={styles.budgetContainerRest}>
-                <Text style={styles.budgetTextRest}>
-                    Restante: {restValue.toLocaleString('pt-BR', { 
-                        style: 'currency', 
-                        currency: 'BRL'
                     })}
                 </Text>
             </View>
@@ -97,17 +89,5 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#c62828',
         textAlign: 'center',
-    },
-    budgetContainerRest: {
-        backgroundColor: '#fff3e0',
-        padding: 10,
-        borderRadius: 8,
-        marginTop: 10,
-    },
-    budgetTextRest: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#f57c00',
-        textAlign: 'center',
-    },
+    }
 });

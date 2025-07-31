@@ -122,7 +122,6 @@ export function useListDatabase() {
             });
 
             await statement.finalizeAsync();
-            console.log("List budget updated successfully");
         } catch (error) {
             console.error("Error updating list budget:", error);
             throw error;
