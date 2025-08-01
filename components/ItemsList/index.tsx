@@ -10,13 +10,15 @@ import { ListWithBudget } from "@/types";
 import { useListDatabase } from "@/database/lists";
 import { useBudget } from "@/hooks/useBudget";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import UpdatePriceItem from "../UpdatePriceItem";
 
 interface ItemsListProps {
    listData: ListWithBudget | undefined;
 }
 
 export default function ItemsList({ listData }: ItemsListProps) {
+    const [visible, setVisible] = useState(false);
 
     const itemDatabase = useItemDatabase();
     const listDatabase = useListDatabase();
@@ -68,6 +70,12 @@ export default function ItemsList({ listData }: ItemsListProps) {
             const currentBudgetValue = currentListData?.budget?.value ?? 0;
             
             const price = Number(item.price) || 0;
+
+            if (price === 0) {
+                setVisible(true);
+                return;
+            }
+
             const quantity = Number(item.quantity) || 1;
             const itemTotalValue = price * quantity;
 
@@ -138,6 +146,15 @@ export default function ItemsList({ listData }: ItemsListProps) {
             <AddItemForm 
                 listType={listData?.type ?? 'mercado'} 
                 listId={listData?.id ?? ''}
+                onItemAdded={async () => {
+                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                }}
+            />
+            <UpdatePriceItem
+                listType={listData?.type ?? 'mercado'}
+                listId={listData?.id ?? ''}
+                visible={visible}
+                setVisible={setVisible}
                 onItemAdded={async () => {
                     await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
