@@ -46,6 +46,20 @@ export function useItemDatabase() {
         }
     }
 
+    async function getItem(itemId: string): Promise<DatabaseSchema['itens'] | null> {
+        try {
+            const query = `
+                SELECT * FROM itens
+                WHERE id = ?
+                LIMIT 1;
+            `;
+            const response = await database.getFirstAsync<DatabaseSchema['itens']>(query, [itemId]);
+            return response || null;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async function updateItemChecked(itemId: string, checked: boolean) {
         const statement = await database.prepareAsync(
             "UPDATE itens SET purchased = $purchased WHERE id = $id;"
@@ -62,9 +76,28 @@ export function useItemDatabase() {
         }
     }
 
+    async function updateItemPrice(itemId: string, newPrice: number) {
+        const statement = await database.prepareAsync(
+            "UPDATE itens SET price = $price WHERE id = $id;"
+        );
+
+        try {
+            await statement.executeAsync({
+                $id: itemId,
+                $price: newPrice,
+            })
+        } catch (error) {
+            throw error;
+        } finally {
+            await statement.finalizeAsync();
+        }
+    }
+
     return {
         create,
         getItems,
         updateItemChecked,
+        updateItemPrice,
+        getItem,
     }
 }

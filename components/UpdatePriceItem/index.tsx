@@ -1,23 +1,49 @@
 import { useState } from "react";
 import { Button, Modal, Portal, useTheme } from "react-native-paper";
 import { View } from "../Themed";
-import { StyleSheet } from "react-native";
+import { Alert, StyleSheet } from "react-native";
 import Input from "../Input";
+import { useItemDatabase } from "@/database/items";
 
 interface UpdatePriceItemProps {
-    listType: "mercado" | "pedido";
-    listId: string; // Assuming you need a listId to associate the item with a list
-    onItemAdded?: () => void;
+    itemId: string;
+    onItemUpdated?: () => void;
     visible: boolean;
     setVisible: (visible: boolean) => void;
 
 }
 
-export default function UpdatePriceItem({ listId, listType, onItemAdded , setVisible, visible}: UpdatePriceItemProps) {
+export default function UpdatePriceItem({onItemUpdated , setVisible, visible, itemId}: UpdatePriceItemProps) {
     const [price, setPrice] = useState('');
-    const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const theme = useTheme();
+    const itemDatabase = useItemDatabase();
+
+    const handleSave = async () => {
+        setIsLoading(true);
+
+        if (!price.trim() || isNaN(Number(price))) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            await itemDatabase.updateItemPrice(itemId, parseFloat(price.trim()));
+            setPrice('');
+
+            Alert.alert('Sucesso', 'Item adicionado com sucesso!');
+
+            setIsLoading(false);
+            setVisible(false);
+            if (onItemUpdated) {
+                onItemUpdated();
+            }
+            
+        } catch (error) {
+            Alert.alert('Erro', 'Erro ao atualizar o preço. Tente novamente.');
+            console.error('Erro ao atualizar o preço:', error);
+            setIsLoading(false);
+        }
+    }
 
     return (
         <View style={{backgroundColor: '#fff',}}>
@@ -53,7 +79,8 @@ export default function UpdatePriceItem({ listId, listType, onItemAdded , setVis
                     
                         <Button 
                             mode="contained" 
-                            // onPress={handleAddItem}
+                            onPress={handleSave}
+                            loading={isLoading}
                             style={[styles.button, { backgroundColor: "#4CAF50", opacity: price.trim() ? 1 : 0.5 }]}
                             disabled={!price.trim()}
                         >

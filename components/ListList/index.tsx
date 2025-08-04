@@ -8,6 +8,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useListDatabase } from "@/database/lists";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ListListProps {
     list: ListWithBudget[];
@@ -63,6 +64,7 @@ export default function ListList({ list }: ListListProps) {
       await listDatabase.removeAll(selectedIds);
 
       await queryClient.invalidateQueries({ queryKey: ['lists'] });
+      await AsyncStorage.removeItem('expenseValue'); // Limpa o valor de despesa armazenado
       setSelectedIds([]);
       setShowCheckboxes(false);
       Alert.alert('Sucesso', 'Listas removidas com sucesso!');

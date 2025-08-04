@@ -23,6 +23,8 @@ export default function ItemsList({ listData }: ItemsListProps) {
     const itemDatabase = useItemDatabase();
     const listDatabase = useListDatabase();
     const queryClient = useQueryClient();
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
     const { data: itemData, isLoading: isItemLoading } = useQuery({
         queryKey: ['itemsList', listData?.id, 'items'],
         queryFn: () => itemDatabase.getItems(listData?.id as string),
@@ -73,8 +75,11 @@ export default function ItemsList({ listData }: ItemsListProps) {
 
             if (price === 0) {
                 setVisible(true);
+                setSelectedItemId(itemId);
                 return;
             }
+
+            setSelectedItemId(null);
 
             const quantity = Number(item.quantity) || 1;
             const itemTotalValue = price * quantity;
@@ -151,11 +156,10 @@ export default function ItemsList({ listData }: ItemsListProps) {
                 }}
             />
             <UpdatePriceItem
-                listType={listData?.type ?? 'mercado'}
-                listId={listData?.id ?? ''}
+                itemId={selectedItemId ?? ''}
                 visible={visible}
                 setVisible={setVisible}
-                onItemAdded={async () => {
+                onItemUpdated={async () => {
                     await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
             />
