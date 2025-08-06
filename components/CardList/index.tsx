@@ -5,6 +5,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Item } from '@/types/items';
 import { Link } from 'expo-router';
 import { useBudget } from '@/hooks/useBudget';
+import { useItemDatabase } from '@/database/items';
 
 interface CardListProps {
   list: ListWithBudget;
@@ -18,7 +19,7 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
     const date = new Date(month);
     return date.toLocaleString('pt-BR', { month: '2-digit', year: 'numeric' });
   }
-
+  const itemDatabase = useItemDatabase();
   const {expenseValue} = useBudget();
 
   function generateShareText(list: ListWithBudget, items: Item[]) {
@@ -45,8 +46,8 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
     return text;
   }
 
-  function shareList() {
-    const items: Item[] = []; //Puxar do banco de dados depois. Possivelmente terei que passar o list.id para buscar os itens relacionados.
+  async function shareList() {
+    const items: Item[] = await itemDatabase.getItems(list.id);
 
     const shareText = generateShareText(list, items);
 
