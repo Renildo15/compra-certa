@@ -52,7 +52,8 @@ export function useListDatabase() {
                 lists.*,
                 budgets.id as "budget.id",
                 budgets.listId as "budget.listId", 
-                budgets.value as "budget.value"
+                budgets.value as "budget.value",
+                budgets.value_original as "budget.value_original"
                 FROM lists
                 LEFT JOIN budgets ON lists.id = budgets.listId
                 ORDER BY lists.created_at DESC;
@@ -61,12 +62,14 @@ export function useListDatabase() {
             const results = await database.getAllAsync<any>(query);
   
             // Transforma o resultado plano em objeto aninhado
+            console.log(results)
             return results.map(row => ({
                 ...row,
                 budget: row["budget.id"] ? {
                 id: row["budget.id"],
                 listId: row["budget.listId"],
-                value: row["budget.value"]
+                value: row["budget.value"],
+                value_original: row["budget.value_original"]
                 } : undefined
             }));
         } catch (error) {
@@ -82,7 +85,8 @@ export function useListDatabase() {
                     lists.*,
                     budgets.id as "budget.id",
                     budgets.listId as "budget.listId", 
-                    budgets.value as "budget.value"
+                    budgets.value as "budget.value",
+                    budgets.value_original as "budget.value_original"
                 FROM lists
                 LEFT JOIN budgets ON lists.id = budgets.listId
                 WHERE lists.id = ?
@@ -99,7 +103,8 @@ export function useListDatabase() {
                 budget: result["budget.id"] ? {
                     id: result["budget.id"],
                     listId: result["budget.listId"],
-                    value: result["budget.value"]
+                    value: result["budget.value"],
+                    original_value: result["budget.value_original"]
                 } : undefined
             };
         } catch (error) {

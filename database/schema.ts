@@ -2,7 +2,7 @@ import { SQLiteDatabase } from "expo-sqlite";
 import { mockLists } from "./mockData";
 
 export async function createSchema(db: SQLiteDatabase) {
-    const DATABASE_VERSION = 1;
+    const DATABASE_VERSION = 2;
 
     const result = await db.getFirstAsync<{ user_version: number }>(`
         PRAGMA user_version;
@@ -49,6 +49,15 @@ export async function createSchema(db: SQLiteDatabase) {
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (listId) REFERENCES lists(id)
             );
+        `);
+
+        await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+    }
+
+    if (currentDbVersion < 2) {
+        await db.execAsync(`
+            ALTER TABLE budgets ADD COLUMN value_original REAL;
+            UPDATE budgets SET value_original = value;    
         `);
 
         await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);

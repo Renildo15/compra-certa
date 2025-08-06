@@ -112,6 +112,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] }),
                 queryClient.invalidateQueries({ queryKey: ['listdetails', listData?.id] }),
+                queryClient.invalidateQueries({ queryKey: ['lists']})
             ]);
             
         } catch (error) {

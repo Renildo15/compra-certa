@@ -27,7 +27,7 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
     }
 
     if (list.budget?.value !== undefined) {
-      text += `💰 Orçamento: ${list.budget.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
+      text += `💰 Orçamento: ${list.budget.value_original.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
     } else {
       text += `💰 Orçamento: Não definido\n`;
     }

@@ -15,7 +15,6 @@ export default function HomeScreen() {
   if (isLoading) {
     return <ActivityIndicator size="large" />;
   }
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>📋 Minhas Listas</Text>
