@@ -6,7 +6,7 @@ export function useBudgetDatabase() {
 
     async function create (data: DatabaseSchema['budgets']) {
         const statement = await database.prepareAsync(
-            "INSERT INTO budgets (id, listId, value, value_original) VALUES ($id, $listId, $value, $value);"
+            "INSERT INTO budgets (id, listId, value, value_original) VALUES ($id, $listId, $value, $value_original);"
         )
 
         try {

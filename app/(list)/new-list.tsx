@@ -53,6 +53,7 @@ export default function NewListScreen() {
           id: String(uuid.v4()),
           listId: id,
           value: parseFloat(budget.replace('R$', '').replace(',', '.')),
+          value_original: parseFloat(budget.replace('R$', '').replace(',', ''))
         })
       }
 

@@ -4,6 +4,7 @@ import Checkbox from 'expo-checkbox';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Item } from '@/types/items';
 import { Link } from 'expo-router';
+import { useBudget } from '@/hooks/useBudget';
 
 interface CardListProps {
   list: ListWithBudget;
@@ -18,6 +19,7 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
     return date.toLocaleString('pt-BR', { month: '2-digit', year: 'numeric' });
   }
 
+  const {expenseValue} = useBudget();
 
   function generateShareText(list: ListWithBudget, items: Item[]) {
     let text = `📋 *${list.name.trim()}* - ${list.type === 'mercado' ? '🛒 Mercado' : '📦 Pedido'}\n`;
@@ -99,14 +101,25 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
         <>
           <Text style={styles.orcamento}>
             💰 Orçamento: {list.budget?.value !== undefined ? 
-              list.budget.value.toLocaleString('pt-BR', {
+              list.budget.value_original.toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL'
               }) : 
               'Não definido'}
           </Text>
-          <Text style={styles.gastos}>Gasto: R$ 185,00 | Saldo: R$ 215,00</Text>
-        </>
+          <Text style={styles.gastos}>Gasto: 
+            {expenseValue.toLocaleString('pt-BR', { 
+              style: 'currency', 
+              currency: 'BRL' 
+            })} | Saldo: 
+            {list?.budget?.value
+            ? Number(list.budget.value).toLocaleString('pt-BR', { 
+                style: 'currency', 
+                currency: 'BRL' 
+            })
+            : 'Não definido'}
+            </Text>
+          </>
       )}
     </View>
   );

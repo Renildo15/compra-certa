@@ -104,7 +104,8 @@ export default function ItemsList({ listData }: ItemsListProps) {
                 listDatabase.updateListBudget(
                     currentListData?.budget?.id as string, 
                     listData?.id as string, 
-                    newBudgetValue
+                    newBudgetValue,
+                    currentListData?.budget?.value_original || 0
                 ),
             ]);
 

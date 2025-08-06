@@ -106,7 +106,6 @@ export default function EditList() {
     }
   };
 
-  console.log('name:', name, 'type:', type, 'month:', month, 'budget:', budget);
   return (
     <View style={styles.container}>
       <View style={{backgroundColor: 'transparent', marginBottom: 20}}>

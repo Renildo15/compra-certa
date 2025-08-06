@@ -62,7 +62,6 @@ export function useListDatabase() {
             const results = await database.getAllAsync<any>(query);
   
             // Transforma o resultado plano em objeto aninhado
-            console.log(results)
             return results.map(row => ({
                 ...row,
                 budget: row["budget.id"] ? {
@@ -104,7 +103,7 @@ export function useListDatabase() {
                     id: result["budget.id"],
                     listId: result["budget.listId"],
                     value: result["budget.value"],
-                    original_value: result["budget.value_original"]
+                    value_original: result["budget.value_original"]
                 } : undefined
             };
         } catch (error) {
@@ -113,17 +112,18 @@ export function useListDatabase() {
         }
     }
 
-    async function updateListBudget(budgetId: string, listId: string, budgetValue: number) {
+    async function updateListBudget(budgetId: string, listId: string, budgetValue: number, value_original: number) {
         try {
             const statement = await database.prepareAsync(
-                `INSERT OR REPLACE INTO budgets (id, listId, value) 
-                VALUES ($id, $listId, $value);`
+                `INSERT OR REPLACE INTO budgets (id, listId, value, value_original) 
+                VALUES ($id, $listId, $value, $value_original);`
             );
 
             await statement.executeAsync({
                 $id: budgetId,
                 $listId: listId,
-                $value: budgetValue
+                $value: budgetValue,
+                $value_original: value_original
             });
 
             await statement.finalizeAsync();
