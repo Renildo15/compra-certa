@@ -9,7 +9,7 @@ export default function HomeScreen() {
 
   const { data: lists = [], isLoading} = useQuery({
     queryKey: ['lists'],
-    queryFn: () => listDatabase.getListsWithBudgets(),
+    queryFn: () => listDatabase.getListsWithBudgets(3),
   })
 
   if (isLoading) {

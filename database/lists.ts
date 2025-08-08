@@ -44,7 +44,7 @@ export function useListDatabase() {
         }
     }
 
-    async function getListsWithBudgets(): Promise<ListWithBudget[]> {
+    async function getListsWithBudgets(limit?:number): Promise<ListWithBudget[]> {
 
         try {
             const query = `
@@ -56,9 +56,9 @@ export function useListDatabase() {
                 budgets.value_original as "budget.value_original"
                 FROM lists
                 LEFT JOIN budgets ON lists.id = budgets.listId
-                ORDER BY lists.created_at DESC;
+                ORDER BY lists.created_at DESC
+                ${limit ? `LIMIT ${limit.toString()}` : ''};
             `;
-
             const results = await database.getAllAsync<any>(query);
   
             // Transforma o resultado plano em objeto aninhado
