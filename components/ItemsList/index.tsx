@@ -6,7 +6,7 @@ import ItemHeader from "../ItemHeader";
 import AddItemForm from "../AddItem";
 import { useItemDatabase } from "@/database/items";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListWithBudget } from "@/types";
+import { BudgetExpenseType, ListWithBudget } from "@/types";
 import { useListDatabase } from "@/database/lists";
 import { useBudget } from "@/hooks/useBudget";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -31,6 +31,43 @@ export default function ItemsList({ listData }: ItemsListProps) {
         enabled: !!listData?.id,
     });
 
+    const saveData = async (newItem: BudgetExpenseType) => {
+        try {
+            const storedData = await AsyncStorage.getItem("lists_expense");
+            const existingList: BudgetExpenseType[] = storedData ? JSON.parse(storedData) : [];
+
+            const itemExists = existingList.some((item: BudgetExpenseType) => 
+                item.list_id === newItem.list_id
+            );
+
+            if (!itemExists) {
+                const updatedList = [...existingList, newItem];
+                await AsyncStorage.setItem('lists_expense', JSON.stringify(updatedList));
+                setBudgetsExpense(updatedList);
+                console.log("Novo item adicionado")
+            } else {
+                console.log("Item já existe na lista");
+            }
+        } catch (error) {
+            console.error("Erro ao salvar!", error)            
+        }
+    }
+
+    const loadList = async () => {
+        try {
+            const storedData = await AsyncStorage.getItem('lists_expense');
+            if (storedData !== null)  {
+                const parsedList = JSON.parse(storedData);
+                setBudgetsExpense(parsedList)
+                console.log('Lista carregada:', parsedList);
+                return parsedList;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar:', error);
+            return [];
+        }
+    }
+
     const storeExpanseValue = async (value: number) => {
         try {
             await AsyncStorage.setItem(`expenseValue`, value.toString());
@@ -49,7 +86,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
         }
     }
 
-    const {setExpenseValue, expenseValue} = useBudget();
+    const {setExpenseValue, expenseValue, setBudgetsExpense, budgetsExpense} = useBudget();
 
     useEffect(() => {
         const fetchAndSetExpenseValue = async () => {
@@ -59,9 +96,10 @@ export default function ItemsList({ listData }: ItemsListProps) {
         };
 
         fetchAndSetExpenseValue();
+        loadList()
         
-    })
-
+    },[])
+    console.log("VVVVVVV: ", budgetsExpense)
     const toggleItemChecked = async (itemId: string) => {
         try {
             const item = itemData?.find(item => item.id === itemId);
@@ -85,14 +123,22 @@ export default function ItemsList({ listData }: ItemsListProps) {
             const itemTotalValue = price * quantity;
 
             // Atualizar os valores de despesas e restante
+            if (!listData?.id) return
+            let newItem:BudgetExpenseType = {
+                list_id: listData?.id,
+                list_expense_value: 0
+            }
             if (!item.purchased) {
                 setExpenseValue(expenseValue + itemTotalValue);
                 await storeExpanseValue(expenseValue + itemTotalValue);
-
+                newItem.list_expense_value = expenseValue + itemTotalValue
             } else {
                 setExpenseValue(expenseValue - itemTotalValue);
                 await storeExpanseValue(expenseValue - itemTotalValue);
+                newItem.list_expense_value = expenseValue - itemTotalValue
             }
+
+            await saveData(newItem)
             // Determinar a nova operação baseada no estado ATUAL do item
             const newPurchasedStatus = !item.purchased;
             const budgetAdjustment = newPurchasedStatus ? -itemTotalValue : itemTotalValue;
@@ -120,6 +166,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
             console.error("Error toggling item checked status:", error);
         }
     };
+
     return (
         <View style={styles.itemsContainer}>
             <ItemHeader/>
