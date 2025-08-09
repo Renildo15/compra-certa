@@ -37,7 +37,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
             const existingList: BudgetExpenseType[] = storedData ? JSON.parse(storedData) : [];
 
             const itemExists = existingList.some((item: BudgetExpenseType) => 
-                item.list_id === newItem.list_id
+                item.item_name === newItem.item_name
             );
 
             if (!itemExists) {
@@ -53,21 +53,19 @@ export default function ItemsList({ listData }: ItemsListProps) {
         }
     }
 
-    const loadList = async () => {
+    const removeItem = async (itemID: string) => {
         try {
-            const storedData = await AsyncStorage.getItem('lists_expense');
-            if (storedData !== null)  {
-                const parsedList = JSON.parse(storedData);
-                setBudgetsExpense(parsedList)
-                console.log('Lista carregada:', parsedList);
-                return parsedList;
-            }
+            const storedData = await AsyncStorage.getItem("lists_expense");
+            const existingList: BudgetExpenseType[] = storedData ? JSON.parse(storedData) : [];
+    
+            const list = existingList.filter((item) => item.item_id !== itemID)
+            const updatedList = [...list];
+            await AsyncStorage.setItem('lists_expense', JSON.stringify(updatedList));
+            setBudgetsExpense(updatedList);
         } catch (error) {
-            console.error('Erro ao carregar:', error);
-            return [];
+            console.error("Erro ao remover item!", error) 
         }
     }
-
     const storeExpanseValue = async (value: number) => {
         try {
             await AsyncStorage.setItem(`expenseValue`, value.toString());
@@ -86,7 +84,16 @@ export default function ItemsList({ listData }: ItemsListProps) {
         }
     }
 
-    const {setExpenseValue, expenseValue, setBudgetsExpense, budgetsExpense} = useBudget();
+    const {setExpenseValue, expenseValue, setBudgetsExpense} = useBudget();
+
+    const clearAppData = async () => {
+        try {
+            const keys = await AsyncStorage.getAllKeys();
+            await AsyncStorage.multiRemove(keys);
+        } catch (error) {
+            console.error('Error clearing app data:', error);
+        }
+    };      
 
     useEffect(() => {
         const fetchAndSetExpenseValue = async () => {
@@ -95,11 +102,10 @@ export default function ItemsList({ listData }: ItemsListProps) {
 
         };
 
-        fetchAndSetExpenseValue();
-        loadList()
-        
+        fetchAndSetExpenseValue();       
+        // clearAppData()
     },[])
-    console.log("VVVVVVV: ", budgetsExpense)
+    
     const toggleItemChecked = async (itemId: string) => {
         try {
             const item = itemData?.find(item => item.id === itemId);
@@ -126,16 +132,17 @@ export default function ItemsList({ listData }: ItemsListProps) {
             if (!listData?.id) return
             let newItem:BudgetExpenseType = {
                 list_id: listData?.id,
-                list_expense_value: 0
+                item_id: item.id,
+                item_name: item.name,
+                list_expense_value: itemTotalValue
             }
             if (!item.purchased) {
                 setExpenseValue(expenseValue + itemTotalValue);
                 await storeExpanseValue(expenseValue + itemTotalValue);
-                newItem.list_expense_value = expenseValue + itemTotalValue
             } else {
                 setExpenseValue(expenseValue - itemTotalValue);
                 await storeExpanseValue(expenseValue - itemTotalValue);
-                newItem.list_expense_value = expenseValue - itemTotalValue
+                removeItem(item.id)
             }
 
             await saveData(newItem)

@@ -6,6 +6,8 @@ import { Item } from '@/types/items';
 import { Link } from 'expo-router';
 import { useBudget } from '@/hooks/useBudget';
 import { useItemDatabase } from '@/database/items';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
 
 interface CardListProps {
   list: ListWithBudget;
@@ -20,7 +22,30 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
     return date.toLocaleString('pt-BR', { month: '2-digit', year: 'numeric' });
   }
   const itemDatabase = useItemDatabase();
-  const {expenseValue} = useBudget();
+  const {budgetsExpense, setBudgetsExpense } = useBudget();
+
+  const expenses = budgetsExpense.filter((exp) => exp.list_id === list?.id);
+  const totalExpense = expenses.reduce((acc, item) => {
+    return acc + item.list_expense_value
+  }, 0)
+
+  const loadList = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem('lists_expense');
+      if (storedData !== null)  {
+          const parsedList = JSON.parse(storedData);
+          setBudgetsExpense(parsedList)
+          return parsedList;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar:', error);
+      return [];
+    }
+  }
+
+  useEffect(() => {
+    loadList() 
+  },[])
 
   function generateShareText(list: ListWithBudget, items: Item[]) {
     let text = `📋 *${list.name.trim()}* - ${list.type === 'mercado' ? '🛒 Mercado' : '📦 Pedido'}\n`;
@@ -109,7 +134,7 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
               'Não definido'}
           </Text>
           <Text style={styles.gastos}>Gasto: 
-            {expenseValue.toLocaleString('pt-BR', { 
+            {totalExpense.toLocaleString('pt-BR', { 
               style: 'currency', 
               currency: 'BRL' 
             })} | Saldo: 
