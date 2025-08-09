@@ -1,5 +1,5 @@
 import { List } from "./lists";
-import { Budget } from "./budgets";
+import { Budget, BudgetExpenseType } from "./budgets";
 import { Item } from "./items";
 
 export type DatabaseSchema = {
@@ -11,3 +11,7 @@ export type DatabaseSchema = {
 export type ListWithBudget = List & {
     budget?: Budget;
 };
+
+export {
+    BudgetExpenseType
+}
