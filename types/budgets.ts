@@ -7,5 +7,7 @@ export type Budget = {
 
 export type BudgetExpenseType = {
     list_id: string;
-    list_expense_value: string | number;
+    item_id: string;
+    item_name: string;
+    list_expense_value: number;
 }
