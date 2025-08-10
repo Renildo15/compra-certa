@@ -3,12 +3,13 @@ import CardList from "../CardList";
 import { Text, View } from "../Themed";
 import { useState } from "react";
 import useDoubleTap from "@/hooks/useDoubleTap";
-import { ListWithBudget } from "@/types";
+import { BudgetExpenseType, ListWithBudget } from "@/types";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useListDatabase } from "@/database/lists";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBudget } from "@/hooks/useBudget";
 
 interface ListListProps {
     list: ListWithBudget[];
@@ -17,11 +18,26 @@ interface ListListProps {
 export default function ListList({ list }: ListListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showCheckboxes, setShowCheckboxes] = useState(false);
+  const { setBudgetsExpense } = useBudget();
   
   const router = useRouter();
 
   const listDatabase = useListDatabase();
   const queryClient = useQueryClient();
+
+  const removeItem = async (listId: string) => {
+    try {
+      const storedData = await AsyncStorage.getItem("lists_expense");
+      const existingList: BudgetExpenseType[] = storedData ? JSON.parse(storedData) : [];
+
+      const list = existingList.filter((item) => item.list_id !== listId)
+      const updatedList = [...list];
+      await AsyncStorage.setItem('lists_expense', JSON.stringify(updatedList));
+      setBudgetsExpense(updatedList);
+    } catch (error) {
+      console.error("Erro ao remover item!", error) 
+    }
+  }
   
   const handleToggleCheckbox = (id: string, isChecked: boolean) => {
     setSelectedIds(prev =>
@@ -61,6 +77,7 @@ export default function ListList({ list }: ListListProps) {
   }
   const handleDeleteLists = async () => {
     try {
+      selectedIds.forEach((item)=> removeItem(item))
       await listDatabase.removeAll(selectedIds);
 
       await queryClient.invalidateQueries({ queryKey: ['lists'] });

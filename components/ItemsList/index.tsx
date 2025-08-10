@@ -44,9 +44,6 @@ export default function ItemsList({ listData }: ItemsListProps) {
                 const updatedList = [...existingList, newItem];
                 await AsyncStorage.setItem('lists_expense', JSON.stringify(updatedList));
                 setBudgetsExpense(updatedList);
-                console.log("Novo item adicionado")
-            } else {
-                console.log("Item já existe na lista");
             }
         } catch (error) {
             console.error("Erro ao salvar!", error)            
