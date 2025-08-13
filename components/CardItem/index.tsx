@@ -7,35 +7,39 @@ import { Item } from "@/types/items";
 interface CardItemProps {
     item: Item;
     toggleItemChecked: (id: string) => void;
+    listType: "mercado" | "pedido"
 }
 
-export default function CardItem({ item, toggleItemChecked }: CardItemProps) {
+export default function CardItem({ item, toggleItemChecked, listType }: CardItemProps) {
     return (
         <View key={item.id} style={[styles.item, item.purchased && styles.checkedItem]}>
-            <TouchableOpacity 
-                onPress={() => toggleItemChecked(item.id)}
-                style={styles.checkbox}
-            >
-                <FontAwesome 
-                    name={item.purchased ? "check-square-o" : "square-o"} 
-                    size={24} 
-                    color={item.purchased ? "#4CAF50" : "#ccc"} 
-                />
-            </TouchableOpacity>
+            { listType === "mercado" && 
+                <TouchableOpacity 
+                    onPress={() => toggleItemChecked(item.id)}
+                    style={styles.checkbox}
+                >
+                    <FontAwesome 
+                        name={item.purchased ? "check-square-o" : "square-o"} 
+                        size={24} 
+                        color={item.purchased ? "#4CAF50" : "#ccc"} 
+                    />
+                </TouchableOpacity>
+            }
             
             <View style={styles.itemDetails}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemMeta}>{item.quantity}</Text>
+                <Text style={styles.itemName}>{item.quantity}x {item.name}</Text>
             </View>
             
-            <Text style={styles.itemPrice}>
-                {typeof item.price === 'number'
-                    ? item.price.toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                    })
-                    : '--'}
-            </Text>
+            {listType === "mercado" && 
+                <Text style={styles.itemPrice}>
+                    {typeof item.price === 'number'
+                        ? item.price.toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                        })
+                        : '--'}
+                </Text>
+            }
         </View>
     )
 }

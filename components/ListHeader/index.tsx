@@ -20,27 +20,32 @@ export default function ListHeader( { listData }:ListHeaderProps) {
             
             <View style={styles.metaContainer}>
                 <Text style={styles.metaText}>Tipo: {listData?.type}</Text>
-                <Text style={styles.metaText}>Mês: {listData?.ref_month || '--/--'}</Text>
+                {listData?.type === 'mercado' &&
+                    <Text style={styles.metaText}>Mês: {listData?.ref_month || '--/--'}</Text>
+                }
             </View>
-            
-            <View style={styles.budgetContainer}>
-                <Text style={styles.budgetText}>
-                    Orçamento: {listData?.budget?.value
-                        ? Number(listData.budget.value).toLocaleString('pt-BR', { 
-                            style: 'currency', 
-                            currency: 'BRL' 
-                        })
-                        : 'Não definido'}
-                </Text>
-            </View>
-            <View style={styles.budgetContainerExpense}>
-                <Text style={styles.budgetTextExpense}>
-                    Despesas: {totalExpense.toLocaleString('pt-BR', { 
-                        style: 'currency', 
-                        currency: 'BRL' 
-                    })}
-                </Text>
-            </View>
+            {listData?.type === 'mercado' &&
+                <>
+                    <View style={styles.budgetContainer}>
+                        <Text style={styles.budgetText}>
+                            Orçamento: {listData?.budget?.value
+                                ? Number(listData.budget.value).toLocaleString('pt-BR', { 
+                                    style: 'currency', 
+                                    currency: 'BRL' 
+                                })
+                                : 'Não definido'}
+                        </Text>
+                    </View>
+                    <View style={styles.budgetContainerExpense}>
+                        <Text style={styles.budgetTextExpense}>
+                            Despesas: {totalExpense.toLocaleString('pt-BR', { 
+                                style: 'currency', 
+                                currency: 'BRL' 
+                            })}
+                        </Text>
+                    </View>
+                </>
+            }
         </View>
     )
 }

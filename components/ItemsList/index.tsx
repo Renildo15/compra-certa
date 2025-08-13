@@ -181,7 +181,8 @@ export default function ItemsList({ listData }: ItemsListProps) {
                     <CardItem 
                         key={item.id} 
                         item={item} 
-                        toggleItemChecked={toggleItemChecked} 
+                        toggleItemChecked={toggleItemChecked}
+                        listType={listData?.type ?? "mercado"}
                     />
                 )}
                 ListEmptyComponent={
