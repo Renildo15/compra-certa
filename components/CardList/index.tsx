@@ -8,6 +8,7 @@ import { useBudget } from '@/hooks/useBudget';
 import { useItemDatabase } from '@/database/items';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect } from 'react';
+import { formatReferenceMonth } from '@/utils/format-reference-month';
 
 interface CardListProps {
   list: ListWithBudget;
@@ -17,10 +18,6 @@ interface CardListProps {
 }
 
 export default function CardList({ list, showCheckboxInitially = false, isChecked, onToggleCheckbox }: CardListProps) {
-  function formatReferenceMonth(month: string) {
-    const date = new Date(month);
-    return date.toLocaleString('pt-BR', { month: '2-digit', year: 'numeric' });
-  }
   const itemDatabase = useItemDatabase();
   const {budgetsExpense, setBudgetsExpense } = useBudget();
 

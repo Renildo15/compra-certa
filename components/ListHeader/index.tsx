@@ -2,6 +2,7 @@ import { StyleSheet } from "react-native";
 import { Text, View } from "../Themed";
 import { ListWithBudget } from "@/types";
 import { useBudget } from "@/hooks/useBudget";
+import { formatReferenceMonth } from "@/utils/format-reference-month";
 
 interface ListHeaderProps {
     listData: ListWithBudget | null | undefined
@@ -21,7 +22,7 @@ export default function ListHeader( { listData }:ListHeaderProps) {
             <View style={styles.metaContainer}>
                 <Text style={styles.metaText}>Tipo: {listData?.type}</Text>
                 {listData?.type === 'mercado' &&
-                    <Text style={styles.metaText}>Mês: {listData?.ref_month || '--/--'}</Text>
+                    <Text style={styles.metaText}>Mês: {listData?.ref_month ? formatReferenceMonth(listData.ref_month) : '--/--'}</Text>
                 }
             </View>
             {listData?.type === 'mercado' &&
