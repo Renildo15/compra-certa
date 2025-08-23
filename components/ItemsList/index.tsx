@@ -1,5 +1,5 @@
 import { Text, View } from "../Themed";
-import { FlatList, StyleSheet } from "react-native";
+import { FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import CardItem from "../CardItem";
 import { Item } from "@/types/items";
 import ItemHeader from "../ItemHeader";
@@ -10,11 +10,52 @@ import { BudgetExpenseType, ListWithBudget } from "@/types";
 import { useListDatabase } from "@/database/lists";
 import { useBudget } from "@/hooks/useBudget";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import UpdatePriceItem from "../UpdatePriceItem";
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, {
+  SharedValue,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+import { FontAwesome } from "@expo/vector-icons";
+import { RectButton } from "react-native-gesture-handler";
 
 interface ItemsListProps {
    listData: ListWithBudget | undefined;
+}
+
+
+function RightAction(prog: SharedValue<number>, drag: SharedValue<number>) {
+  const styleAnimation = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateX: drag.value + 50 }],
+        };
+    });
+
+  return (
+    <Reanimated.View style={styleAnimation}>
+      <RectButton style={styles.rightAction}>
+        <FontAwesome name="trash" size={24} color="#fff" />
+      </RectButton>
+    </Reanimated.View>
+  );
+}
+
+
+function LeftAction(prog: SharedValue<number>, drag: SharedValue<number>) {
+  const styleAnimation = useAnimatedStyle(() => {
+        return {
+            transform: [{ translateX: drag.value - 50 }],
+            };
+    });
+
+  return (
+    <Reanimated.View style={styleAnimation}>
+      <RectButton style={styles.leftAction} onPress={() => console.log('edit')}>
+        <FontAwesome name="edit" size={24} color="#fff" />
+      </RectButton>
+    </Reanimated.View>
+  );
 }
 
 export default function ItemsList({ listData }: ItemsListProps) {
@@ -24,6 +65,8 @@ export default function ItemsList({ listData }: ItemsListProps) {
     const listDatabase = useListDatabase();
     const queryClient = useQueryClient();
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    
+
 
     const { data: itemData, isLoading: isItemLoading } = useQuery({
         queryKey: ['itemsList', listData?.id, 'items'],
@@ -181,12 +224,20 @@ export default function ItemsList({ listData }: ItemsListProps) {
                 keyExtractor={(item: Item) => item.id}
                 showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
-                <CardItem
-                    key={item.id}
-                    item={item}
-                    toggleItemChecked={toggleItemChecked}
-                    listType={listData?.type ?? 'mercado'}
-                />
+                    <ReanimatedSwipeable
+                        friction={2}
+                        enableTrackpadTwoFingerGesture
+                        rightThreshold={40}
+                        renderRightActions={RightAction}
+                        renderLeftActions={LeftAction}
+                    >
+                        <CardItem
+                            key={item.id}
+                            item={item}
+                            toggleItemChecked={toggleItemChecked}
+                            listType={listData?.type ?? 'mercado'}
+                        />
+                    </ReanimatedSwipeable>
                 )}
                 ListEmptyComponent={
                 <View style={{ padding: 20 }}>
@@ -242,4 +293,29 @@ const styles = StyleSheet.create({
     right: 16,
     bottom: 16,
   },
+  rightAction: { 
+    width: 50, 
+    height: 50, 
+    backgroundColor: '#dc3545',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+},
+  separator: {
+    width: '100%',
+    borderTopWidth: 1,
+  },
+  swipeable: {
+    height: 50,
+    backgroundColor: 'papayawhip',
+    alignItems: 'center',
+  },
+    leftAction: { 
+        width: 50, 
+        height: 50, 
+        backgroundColor: '#007bff',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 });
