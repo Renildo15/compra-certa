@@ -172,64 +172,74 @@ export default function ItemsList({ listData }: ItemsListProps) {
     };
 
     return (
-        <View style={styles.itemsContainer}>
-            <ItemHeader/>
+        <View style={[styles.itemsContainer, { flex: 1 }]}>
+            <ItemHeader />
+
             <FlatList
+                style={{ flex: 1}}
                 data={itemData}
                 keyExtractor={(item: Item) => item.id}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
-                    <CardItem 
-                        key={item.id} 
-                        item={item} 
-                        toggleItemChecked={toggleItemChecked}
-                        listType={listData?.type ?? "mercado"}
-                    />
+                <CardItem
+                    key={item.id}
+                    item={item}
+                    toggleItemChecked={toggleItemChecked}
+                    listType={listData?.type ?? 'mercado'}
+                />
                 )}
                 ListEmptyComponent={
-                    <View style={{ padding: 20 }}>
-                        <Text style={{ textAlign: 'center', color: '#888' }}>
-                            Nenhum item encontrado. Adicione um novo item.
-                        </Text>
-                    </View>
+                <View style={{ padding: 20 }}>
+                    <Text style={{ textAlign: 'center', color: '#888' }}>
+                    Nenhum item encontrado. Adicione um novo item.
+                    </Text>
+                </View>
                 }
-                contentContainerStyle={{ paddingBottom: 20 }}
+                // Altura do rodapé fixo + respiro
+                contentContainerStyle={{ paddingBottom: 120 }}
                 refreshing={isItemLoading}
                 onRefresh={async () => {
-                    await queryClient.invalidateQueries({ 
-                        queryKey: ['itemsList', listData?.id, 'items'] // Use a mesma queryKey da sua query
-                    });
-
+                await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
+                keyboardShouldPersistTaps="handled"
             />
-
-            <AddItemForm 
-                listType={listData?.type ?? 'mercado'} 
+            <View style={styles.fixedFooter}>
+                <AddItemForm
+                listType={listData?.type ?? 'mercado'}
                 listId={listData?.id ?? ''}
                 onItemAdded={async () => {
                     await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
-            />
+                />
+            </View>
+
             <UpdatePriceItem
                 itemId={selectedItemId ?? ''}
                 visible={visible}
                 setVisible={setVisible}
                 onItemUpdated={async () => {
-                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
             />
         </View>
-    )
+  );
 }
 
 const styles = StyleSheet.create({
-    itemsContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
+  itemsContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  fixedFooter: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 16,
+  },
 });
