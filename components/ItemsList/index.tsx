@@ -10,7 +10,7 @@ import { BudgetExpenseType, ListWithBudget } from "@/types";
 import { useListDatabase } from "@/database/lists";
 import { useBudget } from "@/hooks/useBudget";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import UpdatePriceItem from "../UpdatePriceItem";
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Reanimated, {
@@ -19,6 +19,7 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import { FontAwesome } from "@expo/vector-icons";
 import { RectButton } from "react-native-gesture-handler";
+import UpdateItem from "../UpdateItem";
 
 interface ItemsListProps {
    listData: ListWithBudget | undefined;
@@ -42,16 +43,27 @@ function RightAction(prog: SharedValue<number>, drag: SharedValue<number>) {
 }
 
 
-function LeftAction(prog: SharedValue<number>, drag: SharedValue<number>) {
+function LeftAction(
+    prog: SharedValue<number>, 
+    drag: SharedValue<number>, 
+    setSelectedUpdateItemId: React.Dispatch<React.SetStateAction<string | null>>, 
+    setVisibleUpdate: React.Dispatch<React.SetStateAction<boolean>>,
+    itemId: string
+) {
   const styleAnimation = useAnimatedStyle(() => {
         return {
             transform: [{ translateX: drag.value - 50 }],
             };
     });
 
+    const handleUpdateItem = () => {
+        setSelectedUpdateItemId(itemId);
+        setVisibleUpdate(true);
+    }
+
   return (
     <Reanimated.View style={styleAnimation}>
-      <RectButton style={styles.leftAction} onPress={() => console.log('edit')}>
+      <RectButton style={styles.leftAction} onPress={() => handleUpdateItem()}>
         <FontAwesome name="edit" size={24} color="#fff" />
       </RectButton>
     </Reanimated.View>
@@ -60,6 +72,8 @@ function LeftAction(prog: SharedValue<number>, drag: SharedValue<number>) {
 
 export default function ItemsList({ listData }: ItemsListProps) {
     const [visible, setVisible] = useState(false);
+    const [visibleUpdate, setVisibleUpdate] = useState(false);
+    const [selectedUpdateItemId, setSelectedUpdateItemId] = useState<string | null>(null);
 
     const itemDatabase = useItemDatabase();
     const listDatabase = useListDatabase();
@@ -229,7 +243,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
                         enableTrackpadTwoFingerGesture
                         rightThreshold={40}
                         renderRightActions={RightAction}
-                        renderLeftActions={LeftAction}
+                        renderLeftActions={(progress, drag) => LeftAction(progress, drag, setSelectedUpdateItemId, setVisibleUpdate, item.id)}
                     >
                         <CardItem
                             key={item.id}
@@ -256,11 +270,11 @@ export default function ItemsList({ listData }: ItemsListProps) {
             />
             <View style={styles.fixedFooter}>
                 <AddItemForm
-                listType={listData?.type ?? 'mercado'}
-                listId={listData?.id ?? ''}
-                onItemAdded={async () => {
-                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
-                }}
+                    listType={listData?.type ?? 'mercado'}
+                    listId={listData?.id ?? ''}
+                    onItemAdded={async () => {
+                        await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                    }}
                 />
             </View>
 
@@ -269,7 +283,17 @@ export default function ItemsList({ listData }: ItemsListProps) {
                 visible={visible}
                 setVisible={setVisible}
                 onItemUpdated={async () => {
-                await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                }}
+            />
+
+            <UpdateItem
+                itemId={selectedUpdateItemId ?? ''}
+                visible={visibleUpdate}
+                listType={listData?.type ?? 'mercado'}
+                setVisible={setVisibleUpdate}
+                onItemUpdated={async () => {
+                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
             />
         </View>

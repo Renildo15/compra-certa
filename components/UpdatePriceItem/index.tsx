@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Modal, Portal, useTheme } from "react-native-paper";
+import { Button, Modal, Portal } from "react-native-paper";
 import { View } from "../Themed";
 import { Alert, StyleSheet } from "react-native";
 import Input from "../Input";
