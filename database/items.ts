@@ -93,11 +93,46 @@ export function useItemDatabase() {
         }
     }
 
+    async function deleteItem(itemId: string) {
+        const statement = await database.prepareAsync(
+            "DELETE FROM itens WHERE id = $id;"
+        );
+
+        try {
+            await statement.executeAsync({
+                $id: itemId,
+            });
+        } catch (error) {
+            throw error;
+        } finally {
+            await statement.finalizeAsync();
+        }
+    }
+
+    async function updateItem(itemId: string, data: Partial<DatabaseSchema['itens']>) {
+        const fields = Object.keys(data).map(key => `${key} = $${key}`).join(', ');
+        const statement = await database.prepareAsync(
+            `UPDATE itens SET ${fields} WHERE id = $id;`
+        );
+
+        try {
+            await statement.executeAsync({
+                ...data,
+                $id: itemId,
+            });
+        } catch (error) {
+            throw error;
+        } finally {
+            await statement.finalizeAsync();
+        }
+    }
     return {
         create,
         getItems,
         updateItemChecked,
         updateItemPrice,
         getItem,
+        deleteItem,
+        updateItem,
     }
 }
