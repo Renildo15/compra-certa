@@ -1,5 +1,5 @@
 import { Text, View } from "../Themed";
-import { FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import { Alert, FlatList, StyleSheet } from "react-native";
 import CardItem from "../CardItem";
 import { Item } from "@/types/items";
 import ItemHeader from "../ItemHeader";
@@ -26,20 +26,57 @@ interface ItemsListProps {
 }
 
 
-function RightAction(prog: SharedValue<number>, drag: SharedValue<number>) {
-  const styleAnimation = useAnimatedStyle(() => {
+function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, itemId: string) {
+    const itemDatabase = useItemDatabase();
+    const queryClient = useQueryClient();
+    const styleAnimation = useAnimatedStyle(() => {
         return {
             transform: [{ translateX: drag.value + 50 }],
         };
     });
 
-  return (
-    <Reanimated.View style={styleAnimation}>
-      <RectButton style={styles.rightAction}>
-        <FontAwesome name="trash" size={24} color="#fff" />
-      </RectButton>
-    </Reanimated.View>
-  );
+        const handleDeleteItem = async () => {
+            try {
+                await itemDatabase.deleteItem(itemId)
+
+                await queryClient.invalidateQueries({ queryKey: ['itemsList'] });
+                Alert.alert('Sucesso', 'Item removido com sucesso!');
+            } catch (error) {
+                console.error('Erro ao remover item:', error);
+                Alert.alert('Erro', 'Não foi possível remover o item selecionadas.'); 
+            }
+        }
+
+        const handleDeleteConfirmation = () => {
+    
+        Alert.alert(
+          'Confirmação de Exclusão',
+          `Você tem certeza que deseja excluir este item?`,
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+            },
+            {
+              text: 'Excluir',
+              style: 'destructive',
+              onPress: () => {
+                handleDeleteItem()
+              },
+            },
+          ],
+          { cancelable: true }
+        )
+    
+      }
+
+    return (
+        <Reanimated.View style={styleAnimation}>
+            <RectButton style={styles.rightAction} onPress={handleDeleteConfirmation}>
+                <FontAwesome name="trash" size={24} color="#fff" />
+            </RectButton>
+        </Reanimated.View>
+    );
 }
 
 
@@ -242,7 +279,12 @@ export default function ItemsList({ listData }: ItemsListProps) {
                         friction={2}
                         enableTrackpadTwoFingerGesture
                         rightThreshold={40}
-                        renderRightActions={RightAction}
+                        renderRightActions={
+                            !item.purchased
+                            ? (progress, drag) =>
+                                RightAction(progress, drag, item.id)
+                            : undefined
+                        }
                         renderLeftActions={
                             !item.purchased
                             ? (progress, drag) =>
@@ -269,7 +311,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
                 contentContainerStyle={{ paddingBottom: 120 }}
                 refreshing={isItemLoading}
                 onRefresh={async () => {
-                await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
+                    await queryClient.invalidateQueries({ queryKey: ['itemsList', listData?.id, 'items'] });
                 }}
                 keyboardShouldPersistTaps="handled"
             />
