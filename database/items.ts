@@ -110,14 +110,23 @@ export function useItemDatabase() {
     }
 
     async function updateItem(itemId: string, data: Partial<DatabaseSchema['itens']>) {
-        const fields = Object.keys(data).map(key => `${key} = $${key}`).join(', ');
+        const sanitized = Object.fromEntries(
+            Object.entries(data).filter(([, v]) => v !== undefined)
+        ) as Partial<DatabaseSchema['itens']>;
+
+        if (Object.keys(sanitized).length === 0) return;
+        const fields = Object.keys(sanitized)
+        .map((key) => `${key} = $${key}`)
+        .join(', ');
         const statement = await database.prepareAsync(
             `UPDATE itens SET ${fields} WHERE id = $id;`
         );
-
+         const params = Object.fromEntries(
+            Object.entries(sanitized).map(([k, v]) => [`$${k}`, v])
+        );
         try {
             await statement.executeAsync({
-                ...data,
+                ...params,
                 $id: itemId,
             });
         } catch (error) {

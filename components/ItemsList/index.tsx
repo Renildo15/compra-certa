@@ -243,7 +243,12 @@ export default function ItemsList({ listData }: ItemsListProps) {
                         enableTrackpadTwoFingerGesture
                         rightThreshold={40}
                         renderRightActions={RightAction}
-                        renderLeftActions={(progress, drag) => LeftAction(progress, drag, setSelectedUpdateItemId, setVisibleUpdate, item.id)}
+                        renderLeftActions={
+                            !item.purchased
+                            ? (progress, drag) =>
+                                LeftAction(progress, drag, setSelectedUpdateItemId, setVisibleUpdate, item.id)
+                            : undefined
+                        }
                     >
                         <CardItem
                             key={item.id}

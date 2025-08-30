@@ -1,10 +1,11 @@
 import { useItemDatabase } from "@/database/items";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Text, View } from "../Themed";
 import { useEffect, useState } from "react";
 import { Button, Modal, Portal, useTheme } from "react-native-paper";
 import Input from "../Input";
-import { StyleSheet } from "react-native";
+import { Alert, StyleSheet } from "react-native";
+import { DatabaseSchema } from "@/types";
 
 interface UpdateItemProps {
     itemId: string;
@@ -16,10 +17,14 @@ interface UpdateItemProps {
 
 export default function UpdateItem({ itemId, setVisible, visible, onItemUpdated, listType}:UpdateItemProps) {
     const itemDatabase = useItemDatabase();
-    const { data: itemData, isLoading: isItemLoading } = useQuery({
+    const queryClient = useQueryClient();
+    const { data: itemData, isLoading: isItemLoading, refetch } = useQuery({
         queryKey: ['itemdetails', itemId],
         queryFn: () => itemDatabase.getItem(itemId),
         enabled: !!itemId,
+        staleTime: 0,
+        refetchOnMount: 'always',
+        refetchOnReconnect: 'always',
     });
     const [name, setName] = useState('');
     const [quantity, setQuantity] = useState('');
@@ -30,18 +35,71 @@ export default function UpdateItem({ itemId, setVisible, visible, onItemUpdated,
     const theme = useTheme();
 
     useEffect(() => {
+        if (visible && itemId) {
+            refetch();
+        }
+    }, [visible, itemId, refetch]);
+
+    useEffect(() => {
         if (!itemData) return;
         setName(itemData.name ?? '');
         setQuantity(itemData.quantity != null ? String(itemData.quantity) : '');
         setPrice(itemData.price != null ? String(itemData.price) : '');
         setCategory(itemData.category ?? '');
         setObservation(itemData.observation ?? '');
-    }, [itemData?.id]);
+    }, [itemData, visible]);
 
     const [error, setError] = useState<string | null>(null);
 
     const showModal = () => setVisible(true);
     const hideModal = () => setVisible(false);
+
+    const handleSave = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        if (!name.trim()) {
+            Alert.alert('Erro', 'O nome do item é obrigatório.');
+            setIsLoading(false);
+            return;
+        }
+
+        if (!quantity.trim() || isNaN(Number(quantity))) {
+            Alert.alert('Erro', 'A quantidade deve ser um número válido.');
+            setIsLoading(false);
+            return;
+        }
+
+         const payload: Partial<DatabaseSchema['itens']> = {
+            name: name.trim(),
+            quantity: quantity,
+        };
+
+        if (listType === 'mercado') {
+            if (price.trim() && isNaN(Number(price))) {
+                Alert.alert('Erro', 'O preço deve ser um número válido.');
+                setIsLoading(false);
+                return;
+            }
+            payload.price = price.trim() ? Number(price) : 0;
+            payload.category = category;
+            payload.observation = observation;
+        }
+
+        try {
+           await itemDatabase.updateItem(itemId, payload);
+           await queryClient.invalidateQueries({ queryKey: ['itemdetails', itemId] });
+            Alert.alert('Sucesso', 'Item atualizado com sucesso!');
+            hideModal();
+            await onItemUpdated?.();
+        } catch (error) {
+            console.error('Erro ao atualizar item:', error);
+            setError('Falha ao atualizar item. Tente novamente.');
+            Alert.alert('Erro', 'Falha ao atualizar item. Tente novamente.');
+        } finally {
+            setIsLoading(false);
+        }
+    }
     return (
         <View>
             <Portal>
@@ -114,11 +172,11 @@ export default function UpdateItem({ itemId, setVisible, visible, onItemUpdated,
                     
                         <Button 
                             mode="contained" 
-                            // onPress={handleAddItem}
+                            onPress={handleSave}
                             style={[styles.button, { backgroundColor: "#4CAF50", opacity: name.trim() ? 1 : 0.5 }]}
                             disabled={!name.trim()}
                         >
-                            {isLoading ? 'Adicionando...' : 'Adicionar Item'}
+                            {isLoading ? 'Atualizando...' : 'Atualizar Item'}
                         </Button>
                     </View>
                     </View>
