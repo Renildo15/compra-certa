@@ -25,50 +25,45 @@ interface ItemsListProps {
    listData: ListWithBudget | undefined;
 }
 
+type SwipeActionProps = {
+  progress: SharedValue<number>;
+  drag: SharedValue<number>;
+};
 
-function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, itemId: string) {
+type RightActionProps = SwipeActionProps & {
+  itemId: string;
+};
+
+
+function RightAction({drag, progress, itemId}:RightActionProps) {
     const itemDatabase = useItemDatabase();
     const queryClient = useQueryClient();
-    const styleAnimation = useAnimatedStyle(() => {
-        return {
-            transform: [{ translateX: drag.value + 50 }],
-        };
-    });
 
-        const handleDeleteItem = async () => {
-            try {
-                await itemDatabase.deleteItem(itemId)
-
-                await queryClient.invalidateQueries({ queryKey: ['itemsList'] });
-                Alert.alert('Sucesso', 'Item removido com sucesso!');
-            } catch (error) {
-                console.error('Erro ao remover item:', error);
-                Alert.alert('Erro', 'Não foi possível remover o item selecionadas.'); 
-            }
+    const styleAnimation = useAnimatedStyle(() => ({
+        transform: [{ translateX: drag.value + 50 }],
+    }));
+    const handleDeleteItem = async () => {
+        try {
+            await itemDatabase.deleteItem(itemId);
+            await queryClient.invalidateQueries({ queryKey: ['itemsList'] });
+            Alert.alert('Sucesso', 'Item removido com sucesso!');
+        } catch (error) {
+            console.error('Erro ao remover item:', error);
+            Alert.alert('Erro', 'Não foi possível remover o item selecionado.');
         }
+    };
 
-        const handleDeleteConfirmation = () => {
-    
+    const handleDeleteConfirmation = () => {
         Alert.alert(
-          'Confirmação de Exclusão',
-          `Você tem certeza que deseja excluir este item?`,
-          [
-            {
-              text: 'Cancelar',
-              style: 'cancel',
-            },
-            {
-              text: 'Excluir',
-              style: 'destructive',
-              onPress: () => {
-                handleDeleteItem()
-              },
-            },
-          ],
-          { cancelable: true }
-        )
-    
-      }
+        'Confirmação de Exclusão',
+        'Você tem certeza que deseja excluir este item?',
+        [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Excluir', style: 'destructive', onPress: handleDeleteItem },
+        ],
+        { cancelable: true }
+        );
+    };
 
     return (
         <Reanimated.View style={styleAnimation}>
@@ -79,32 +74,27 @@ function RightAction(prog: SharedValue<number>, drag: SharedValue<number>, itemI
     );
 }
 
+type LeftActionProps = SwipeActionProps & {
+  itemId: string;
+  setSelectedUpdateItemId: React.Dispatch<React.SetStateAction<string | null>>, 
+  setVisibleUpdate: React.Dispatch<React.SetStateAction<boolean>>,
+};
 
-function LeftAction(
-    prog: SharedValue<number>, 
-    drag: SharedValue<number>, 
-    setSelectedUpdateItemId: React.Dispatch<React.SetStateAction<string | null>>, 
-    setVisibleUpdate: React.Dispatch<React.SetStateAction<boolean>>,
-    itemId: string
-) {
-  const styleAnimation = useAnimatedStyle(() => {
-        return {
-            transform: [{ translateX: drag.value - 50 }],
-            };
-    });
-
+function LeftAction({drag, progress, itemId, setSelectedUpdateItemId, setVisibleUpdate}: LeftActionProps) {
+    const styleAnimation = useAnimatedStyle(() => ({
+        transform: [{ translateX: drag.value - 50 }],
+    }));
     const handleUpdateItem = () => {
         setSelectedUpdateItemId(itemId);
         setVisibleUpdate(true);
     }
-
-  return (
-    <Reanimated.View style={styleAnimation}>
-      <RectButton style={styles.leftAction} onPress={() => handleUpdateItem()}>
-        <FontAwesome name="edit" size={24} color="#fff" />
-      </RectButton>
-    </Reanimated.View>
-  );
+    return (
+        <Reanimated.View style={styleAnimation}>
+        <RectButton style={styles.leftAction} onPress={() => handleUpdateItem()}>
+            <FontAwesome name="edit" size={24} color="#fff" />
+        </RectButton>
+        </Reanimated.View>
+    );
 }
 
 export default function ItemsList({ listData }: ItemsListProps) {
@@ -282,13 +272,13 @@ export default function ItemsList({ listData }: ItemsListProps) {
                         renderRightActions={
                             !item.purchased
                             ? (progress, drag) =>
-                                RightAction(progress, drag, item.id)
+                                <RightAction drag={drag} itemId={item.id} progress={progress}/>
                             : undefined
                         }
                         renderLeftActions={
                             !item.purchased
                             ? (progress, drag) =>
-                                LeftAction(progress, drag, setSelectedUpdateItemId, setVisibleUpdate, item.id)
+                                <LeftAction drag={drag} progress={progress} itemId={item.id} setSelectedUpdateItemId={setSelectedUpdateItemId} setVisibleUpdate={setVisibleUpdate}/>
                             : undefined
                         }
                     >
