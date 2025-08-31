@@ -174,13 +174,12 @@ export function useListDatabase() {
 
     async function updateMultipleLists(updates: Array<{list: DatabaseSchema['lists'], budget?: {id: string, value: number}}>) {
         try {
-            console.log('Updating lists:', updates);
             await database.withTransactionAsync(async () => {
                 const listStatement = await database.prepareAsync(
                     `UPDATE lists SET 
                     name = $name, 
                     type = $type, 
-                    ref_month = $ref_month 
+                    ref_month = COALESCE($ref_month, ref_month) -- mantém original se $ref_month for null
                     WHERE id = $id`
                 );
                 
@@ -189,7 +188,7 @@ export function useListDatabase() {
                         $id: list.id,
                         $name: list.name,
                         $type: list.type,
-                        $ref_month: list.ref_month || null
+                        $ref_month: list.ref_month ?? null, // bulk envia null -> COALESCE mantém o do banco
                     })
                 }
 

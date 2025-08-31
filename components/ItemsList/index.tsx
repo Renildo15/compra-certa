@@ -194,7 +194,7 @@ export default function ItemsList({ listData }: ItemsListProps) {
         };
 
         fetchAndSetExpenseValue();       
-        // clearAppData()
+        clearAppData()
     },[])
     
     const toggleItemChecked = async (itemId: string) => {

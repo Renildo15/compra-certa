@@ -84,6 +84,18 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
 
   }
 
+  const formatCurrencyBRL = (val: unknown) => {
+    if (val === null || val === undefined) return null;
+    const n = typeof val === 'number' ? val : Number(val);
+    if (Number.isNaN(n)) return null;
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
+  const budgetValue =
+  list?.budget?.value_original ?? // 1ª preferência se existir
+  list?.budget?.value ??          // fallback
+  null;
+
   return (
     <View style={[
       styles.card,
@@ -123,26 +135,21 @@ export default function CardList({ list, showCheckboxInitially = false, isChecke
       {list.type === 'mercado' && (
         <>
           <Text style={styles.orcamento}>
-            💰 Orçamento: {list.budget?.value !== undefined ? 
-              list.budget.value_original.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }) : 
-              'Não definido'}
+            💰 Orçamento: {formatCurrencyBRL(budgetValue) ?? 'Não definido'}
           </Text>
           <Text style={styles.gastos}>Gasto: 
-            {totalExpense.toLocaleString('pt-BR', { 
+          {totalExpense.toLocaleString('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL' 
+          })} | Saldo: 
+          {list?.budget?.value
+          ? Number(list.budget.value).toLocaleString('pt-BR', { 
               style: 'currency', 
               currency: 'BRL' 
-            })} | Saldo: 
-            {list?.budget?.value
-            ? Number(list.budget.value).toLocaleString('pt-BR', { 
-                style: 'currency', 
-                currency: 'BRL' 
-            })
-            : 'Não definido'}
-            </Text>
-          </>
+          })
+          : 'Não definido'}
+          </Text>
+        </>
       )}
     </View>
   );

@@ -7,159 +7,168 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router/build/hooks";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity } from "react-native";
-//TODO: corrigir problema de editar múltiplas listas
+
 export default function EditList() {
   const params = useLocalSearchParams();
   const ids = (params.listId as string).split(',');
-
-  const [id, setId] = useState<string | null>(null);
-
-  const [name, setName] = useState('');
-  const [type, setType] = useState('mercado');
-  const [month, setMonth] = useState('');
-  const [budget, setBudget] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const isBulk = ids.length > 1;
 
   const listDatabase = useListDatabase();
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // useEffect(() => {
-
-  //   const getList = async () => {
-  //     if (ids.length === 0) return;
-
-  //     setIsLoading(true);
-  //     setError(null);
-
-  //     try {
-
-  //       if (ids.length === 1) {
-  //         const list = await listDatabase.getList(ids[0]);
-  //         if (list) {
-  //           setId(list.id);
-  //           setName(list.name);
-  //           setType(list.type);
-  //           setMonth(list.ref_month || '');
-  //           setBudget(list.budget?.value.toString() || '');
-  //         } else {
-  //           setError('Lista não encontrada');
-  //         }
-  //       } else {
-          
-  //       }
-  //     } catch (err) {
-  //       setError('Erro ao carregar lista');
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   }
-
-  //   getList();
-  // }, [ids]);
-
   const { data: listData, isLoading: isListLoading } = useQuery({
     queryKey: ['list', ids[0]],
     queryFn: () => ids.length === 1 ? listDatabase.getList(ids[0]) : null,
-    enabled: !!ids[0] && ids.length === 1
+    enabled: !!ids[0] && !isBulk,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
   });
 
+  const [name, setName] = useState('');
+  const [type, setType] = useState('mercado');
+  const [month, setMonth] = useState('');
+  const [budget, setBudget] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isBulk && listData) {
+      setName(listData.name || "");
+      setType((listData.type as ListType) || "mercado");
+      setMonth(listData.ref_month || "");
+      setBudget(listData.budget?.value != null ? String(listData.budget.value) : "");
+    }
+  }, [isBulk, listData])
+ 
+  const parseCurrencyToNumber = (raw: string) => {
+    if (!raw.trim()) return undefined;
+    // remove R$, espaços e separador de milhar (.)
+    const cleaned = raw.replace(/R\$\s?/g, "").replace(/\./g, "").replace(",", ".");
+    const n = Number(cleaned);
+    return isNaN(n) ? undefined : n;
+  };
+
   const handleSave = async () => {
-    if (!name || !type) {
+    if (!name.trim() || !type) {
       setError('Por favor, preencha todos os campos obrigatórios.');
       return;
-    } 
+    }
 
-    setIsLoading(true);
+    // orçamento só é obrigatório para listas de mercado
+    if (type === "mercado" && !budget.trim()) {
+      setError('Informe o orçamento para listas do tipo "mercado".');
+      return;
+    }
+    setIsSaving(true);
     setError(null);
 
     try {
-      const updates = [{
+      const parsedBudget = type === "mercado" ? parseCurrencyToNumber(budget) : undefined;
+      const updates = ids.map((listId) => ({
         list: {
-          id: id || '',
-          name,
+          id: listId,
+          name: name.trim(),
           type: type as ListType,
           ref_month: month || undefined,
           created_at: new Date().toISOString(),
         },
-        budget: budget ? {
-          id: id || new Date().getTime().toString(),
-          value: parseFloat(budget.replace('R$', '').replace(',', '.')),
-        } : undefined
-      }]
-
+        budget:
+          type === "mercado" && parsedBudget != null
+            ? {
+                id: listId, // use o id da lista como id do orçamento (ajuste se seu schema for diferente)
+                value: parsedBudget,
+              }
+            : undefined,
+      }));
+      console.log("AQUI: ", updates)
       await listDatabase.updateMultipleLists(updates);
 
-      Alert.alert('Sucesso', 'Lista atualizada com sucesso!');
-      setName('');
-      setType('mercado');
-      setMonth('');
-      setBudget('');
-      setId(null);
-      await queryClient.invalidateQueries({ queryKey: ['lists'] });
+      await queryClient.invalidateQueries({ queryKey: ["lists"] });
+      if (!isBulk && ids[0]) {
+        await queryClient.invalidateQueries({ queryKey: ["list", ids[0]] });
+      }
+
+      Alert.alert("Sucesso", isBulk ? "Listas atualizadas com sucesso!" : "Lista atualizada com sucesso!");
       router.back();
     } catch (err) {
       setError('Erro ao salvar alterações');
     } finally {
-      setIsLoading(false);
+      setIsSaving(false)
     }
   };
 
+  const loading = isListLoading || ( !isBulk && !listData && ids.length === 1 );
+  
   return (
     <View style={styles.container}>
-      <View style={{backgroundColor: 'transparent', marginBottom: 20}}>
-        {ids.length > 1 ? (
-          <Text style={styles.title}>Editando {ids.length} listas</Text> 
+      <View style={{ backgroundColor: "transparent", marginBottom: 20 }}>
+        {isBulk ? (
+          <Text style={styles.title}>Editando {ids.length} listas</Text>
         ) : (
           <Text style={styles.title}>Editando Lista</Text>
         )}
       </View>
-      <Input
-        label="Nome da Lista"
-        value={listData?.name || name}
-        onChangeText={setName}
-        placeholder="Digite o nome da lista"
-      />
-      <TypeSelect
-        label="Tipo de Lista"
-        value={type}
-        onChange={(val: string) => setType(val as ListType)}
-      />
 
-      { type === 'mercado' && (
+      {loading ? (
+        <ActivityIndicator />
+      ) : (
         <>
           <Input
-            label='Mês de Referência'
-            value={listData?.ref_month || month}
-            onChangeText={setMonth}
-            placeholder='2025-07'
+            label="Nome da Lista"
+            value={name}
+            onChangeText={setName}
+            placeholder="Digite o nome da lista"
           />
-          <Input
-            label='Orçamento'
-            value={listData?.budget?.value.toString() || budget}
-            onChangeText={setBudget}
-            placeholder='R$ 100,00'
-            keyboardType='numeric'
-          />
+
+          { !isBulk && (
+            <TypeSelect
+              label="Tipo de Lista"
+              value={type}
+              onChange={(val: string) => setType(val as ListType)}
+            />
+          )}
+
+          {type === "mercado" && (
+            <>
+              {!isBulk && (
+                 <Input
+                  label="Mês de Referência"
+                  value={month}
+                  onChangeText={setMonth}
+                  placeholder="2025-07"
+                />
+              )}
+              <Input
+                label="Orçamento"
+                value={budget}
+                onChangeText={setBudget}
+                placeholder="R$ 100,00"
+                keyboardType="numeric"
+              />
+            </>
+          )}
+
+          <View style={{ marginTop: 20, width: "100%" }}>
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={isSaving}
+              style={[styles.button, isSaving && styles.disabledButton]}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+                  Salvar Alterações
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {error && <Text style={{ color: "red", marginTop: 10 }}>{error}</Text>}
+          </View>
         </>
       )}
-      <View style={{ marginTop: 20, width: '100%' }}>
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={isLoading}
-          style={[styles.button, isLoading && styles.disabledButton]}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
-             Salvar Alterações  
-            </Text>
-          )}
-        </TouchableOpacity>
-        {error && <Text style={{ color: 'red', marginTop: 10 }}>{error}</Text>}
-      </View>
     </View>
   );
 }
